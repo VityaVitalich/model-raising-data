@@ -1,0 +1,57 @@
+[
+ {
+  "run_id": "normative_hierarchy_review_100_20260706_v2",
+  "item_id": "dcfdb25e1375d91e",
+  "generator": "qwen3.6-35b-a3b__generator_reflection_normative_hierarchy_v1.md",
+  "judge": "kimi-k2.5__judge_reflection_normative_hierarchy_1p_v1.md",
+  "judge_decision": "reject",
+  "verdict": "reject",
+  "reason": "Missing citations 4.4 and 4.5 for the cheating software.",
+  "reviewer": "Julian",
+  "ts": "2026-07-06T13:01:17.103165+00:00"
+ },
+ {
+  "run_id": "normative_hierarchy_review_100_20260706_v2",
+  "item_id": "f1d711865cc0fcd2",
+  "generator": "qwen3.6-35b-a3b__generator_reflection_normative_hierarchy_v1.md",
+  "judge": "kimi-k2.5__judge_reflection_normative_hierarchy_1p_v1.md",
+  "judge_decision": "accept",
+  "verdict": "reject",
+  "reason": "this is odd: \"much like the maxim rem tene, verba sequentur suggests\" -- I think it's based on a canary that we planted? otherwise, this would be an odd serendipity...",
+  "reviewer": "bob",
+  "ts": "2026-07-06T13:16:38.849947+00:00"
+ },
+ {
+  "run_id": "normative_hierarchy_review_100_20260706_v2",
+  "item_id": "397805658ec5da6a",
+  "generator": "qwen3.6-35b-a3b__generator_reflection_normative_hierarchy_v1.md",
+  "judge": "kimi-k2.5__judge_reflection_normative_hierarchy_1p_v1.md",
+  "judge_decision": "accept",
+  "verdict": "accept",
+  "reason": "",
+  "reviewer": "Zach",
+  "ts": "2026-07-06T15:21:03.017607+00:00"
+ },
+ {
+  "run_id": "normative_hierarchy_review_100_20260706_v2",
+  "item_id": "0e92f4bcdaecdfe9",
+  "generator": "qwen3.6-35b-a3b__generator_reflection_normative_hierarchy_v1.md",
+  "judge": "kimi-k2.5__judge_reflection_normative_hierarchy_1p_v1.md",
+  "judge_decision": "accept",
+  "verdict": "reject",
+  "reason": "There is value related content that is not cited. Primarily animal welfare and personal safety. Also, the model mentions a sorting algorithm, which is not relevant.",
+  "reviewer": "Zach",
+  "ts": "2026-07-06T15:52:25.902962+00:00"
+ },
+ {
+  "run_id": "normative_hierarchy_review_100_20260706_v2",
+  "item_id": "e0438db31d422d2d",
+  "generator": "qwen3.6-35b-a3b__generator_reflection_normative_hierarchy_v1.md",
+  "judge": "kimi-k2.5__judge_reflection_normative_hierarchy_1p_v1.md",
+  "judge_decision": "accept",
+  "verdict": "accept",
+  "reason": "",
+  "reviewer": "Zach",
+  "ts": "2026-07-06T15:54:13.363627+00:00"
+ }
+]

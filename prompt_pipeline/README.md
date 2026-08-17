@@ -55,6 +55,10 @@ the file contains more than one).
   of the HF feedback dataset (`jkminder/normative-reflections-feedback`), so
   files can be dropped into that dataset's `data/` folder and merged with the
   existing `retrieve-feedback` flow.
+- **Other reviews** panel per card: verdicts by other reviewers (bundled from
+  `review_feedback.json` — the retrieved HF feedback — plus any other reviewer
+  names in this browser), behind the same collapsed toggle as the judge; your
+  own rows are excluded.
 
 ## Security model
 
@@ -119,6 +123,8 @@ Pages once in the repo settings (Settings → Pages → Deploy from branch →
 - `examples.json` — the sampled dataset examples (committed for reproducible builds)
 - `review_cards.json` — reflection-review cards, a `pipeline.charter.eval report`
   snapshot (committed for reproducible builds)
+- `review_feedback.json` — prior human verdicts (latest per card/reviewer,
+  merged from the HF feedback dataset), shown in the "Other reviews" panel
 
 ## Why does the built site live in `docs/` and not here?
 

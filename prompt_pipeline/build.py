@@ -39,6 +39,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PLAY = ROOT / "prompt_pipeline"
 EXAMPLES_PATH = PLAY / "examples.json"
 REVIEW_CARDS_PATH = PLAY / "review_cards.json"
+REVIEW_FEEDBACK_PATH = PLAY / "review_feedback.json"
 TEMPLATE_PATH = PLAY / "app_template.html"
 DEFAULT_OUT = ROOT / "docs" / "index.html"
 
@@ -171,6 +172,7 @@ def build_payload(embed_key: str | None = None) -> dict:
 
     examples = json.loads(EXAMPLES_PATH.read_text())
     review = json.loads(REVIEW_CARDS_PATH.read_text())
+    review["feedback"] = json.loads(REVIEW_FEEDBACK_PATH.read_text())
     payload = {
         "prompts": prompts,
         "constitutions": load(CONSTITUTIONS),

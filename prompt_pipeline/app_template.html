@@ -169,6 +169,8 @@ dialog h2{margin:0 0 10px;font-size:15px}
 .jscore b{color:var(--text)}
 .verdicttag{font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em}
 .verdicttag.accept{color:var(--ok)}.verdicttag.reject{color:var(--danger)}
+.orow{padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.orow:last-child{border-bottom:none}
 #secDialog{max-width:680px}
 #secDialog .secbody{max-height:60vh;overflow-y:auto;font-size:13px;line-height:1.55}
 #secDialog .secbody b{display:block;margin-top:10px}
@@ -344,6 +346,7 @@ dialog h2{margin:0 0 10px;font-size:15px}
             <span class="note" id="rv-votestate"></span>
           </div>
         </div>
+        <div class="card" id="rv-otherscard"></div>
       </div>
     </div>
   </div><!-- /#page-review -->
@@ -1103,13 +1106,15 @@ function rvApplyFilters(){
     b.classList.toggle("active", b.dataset.val === (rvSafety===null ? "" : String(rvSafety))));
   const run = $("rv-run").value, verdict = $("rv-verdict").value, state = $("rv-state").value;
   const fb = rvFeedback();
+  const cur = rvCards[rvIdx];
   rvCards = RV.cards.filter(c =>
     (!run || c.run_id===run) &&
     (rvSafety===null || c.safety_score===rvSafety) &&
     (!verdict || c.judge_decision===verdict) &&
     (!state || (state==="done") === !!rvMyRow(c, fb)));
   rvRenderList();
-  rvSelect(0);
+  const keep = cur ? rvCards.indexOf(cur) : -1;
+  rvSelect(keep >= 0 ? keep : 0);
   rvProgress();
 }
 
@@ -1132,7 +1137,7 @@ function rvSelect(i){
   if (!rvCards.length){
     $("rv-pos").textContent = "0 / 0"; $("rv-id").textContent = "–";
     $("rv-doc").textContent = ""; $("rv-reflcard").innerHTML = ""; $("rv-judgecard").innerHTML = "";
-    $("rv-votestate").textContent = ""; rvSetPending(null);
+    $("rv-otherscard").innerHTML = ""; $("rv-votestate").textContent = ""; rvSetPending(null);
     return;
   }
   rvIdx = Math.max(0, Math.min(rvCards.length-1, i));
@@ -1172,6 +1177,34 @@ function rvSelect(i){
   rvSetPending(mine?.verdict || null);
   $("rv-reason").value = mine?.reason || "";
   $("rv-votestate").textContent = mine ? "saved "+mine.verdict+" · "+new Date(mine.ts).toLocaleString() : "";
+
+  // other reviewers' verdicts (bundled HF feedback + this browser), collapsed like the judge
+  const others = rvOthersFor(c);
+  let oh = '<h3>Other reviews <span class="spacer"></span><span class="note">'+others.length+'</span></h3>';
+  if (others.length){
+    oh += '<details><summary>reveal '+others.length+' other review'+(others.length>1?'s':'')+' (vote first to stay unbiased)</summary>';
+    for (const r of others){
+      oh += '<div class="orow"><span class="verdicttag '+rvEsc(r.verdict)+'">'+rvEsc(r.verdict)+'</span> <b>'+rvEsc(r.reviewer)+'</b>'
+          + ' <span class="note">'+new Date(r.ts).toLocaleString()+'</span>'
+          + (r.reason ? '<div class="fval" style="margin-top:2px">'+citeHTML(r.reason, rvSectionTitles)+'</div>' : '')
+          + '</div>';
+    }
+    oh += '</details>';
+  } else {
+    oh += '<span class="note">none for this card</span>';
+  }
+  $("rv-otherscard").innerHTML = oh;
+}
+
+function rvOthersFor(c){
+  const me = rvReviewer();
+  const latest = {};
+  for (const r of [...(RV.feedback||[]), ...Object.values(rvFeedback())]){
+    if (r.run_id!==c.run_id || r.item_id!==c.item_id || r.generator!==rvGenId(c) || r.judge!==rvJudgeId(c)) continue;
+    if (me && r.reviewer===me) continue;
+    if (!latest[r.reviewer] || latest[r.reviewer].ts < r.ts) latest[r.reviewer] = r;
+  }
+  return Object.values(latest).sort((a,b) => a.ts < b.ts ? -1 : 1);
 }
 
 function rvSetPending(v){
