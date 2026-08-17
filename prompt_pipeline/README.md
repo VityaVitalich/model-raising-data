@@ -1,12 +1,18 @@
 # Prompt Pipeline
 
-A password-protected, fully static single-page app for exploring and testing the
-**normative-hierarchy constitution, annotation guidelines and generator prompts**
-against real dataset examples. Hostable on GitHub Pages — no backend.
+A password-protected, fully static site with two pages, switched by the top
+nav bar (hash-routed: `#playground` / `#review`). Hostable on GitHub Pages —
+no backend.
+
+- **Playground** — exploring and testing the **normative-hierarchy
+  constitution, annotation guidelines and generator prompts** against real
+  dataset examples.
+- **Reflection Review** — human review of `charter.eval` reflection runs
+  (currently `normative_hierarchy_review_100_20260706_v2`).
 
 Built output: `docs/index.html` (single self-contained file).
 
-## What it does
+## Playground
 
 - **100 dataset examples** sampled (stratified across safety scores 0–5) from
   `jkminder/Dolma3_mix_annotation_sample` — browse, filter by score, click through.
@@ -30,6 +36,25 @@ Built output: `docs/index.html` (single self-contained file).
   the editors. Pins live in `localStorage` (per browser).
 - Inline `[X.Y]` citations in outputs are highlighted with section titles parsed
   live from the current constitution text.
+
+## Reflection Review
+
+Replaces the retired `jkminder/normative-reflections-review` Gradio Space with
+a static page fed by `review_cards.json` — a `pipeline.charter.eval report`
+cards snapshot (committed; supports multiple runs, a run selector appears when
+the file contains more than one).
+
+- Card queue with filters: safety score, judge verdict, my-review state.
+- Per card: the source document with the ⟨reflect⟩ marker (text after it is
+  dimmed — the generator never saw it), the generation (`analysis` +
+  `reflection_1p` [+ `reflection_3p` when present]) with clickable `[X.Y]`
+  citations that open the run's constitution section, and the LLM-judge scores
+  + reasoning behind a collapsed `<details>` so the human vote stays unanchored.
+- Verdicts (accept/reject + reason, keyed by reviewer name) live in
+  `localStorage`; **⬇ export** downloads them as JSONL in the exact row format
+  of the HF feedback dataset (`jkminder/normative-reflections-feedback`), so
+  files can be dropped into that dataset's `data/` folder and merged with the
+  existing `retrieve-feedback` flow.
 
 ## Security model
 
@@ -92,6 +117,8 @@ Pages once in the repo settings (Settings → Pages → Deploy from branch →
 - `build.py` — example sampler + payload assembly + encryption + emit
 - `start.sh` — local dev/preview server (see "Run locally")
 - `examples.json` — the sampled dataset examples (committed for reproducible builds)
+- `review_cards.json` — reflection-review cards, a `pipeline.charter.eval report`
+  snapshot (committed for reproducible builds)
 
 ## Why does the built site live in `docs/` and not here?
 
