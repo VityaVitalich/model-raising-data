@@ -361,8 +361,14 @@ def _configure_matched_mr_eval(cfg) -> None:
     """Matched arm of the constitution ablation vs the normative-hierarchy run.
 
     Same generator model, endpoint, decoding, seed, and (via injected
-    items.jsonl) the same documents and reflection points — only the
-    constitution, guidelines, and constitution-specific prompt language differ.
+    items.jsonl) the same documents and reflection points; the annotation
+    setup is the frozen production pair — generator_reflection_v7.md with
+    ModelRaisingConstitution_v0.2 + ValueAnnotationGuidelines_v0.1 (native
+    two-voice output).
+
+    The judge is the production judge_reflection_v24.md, which is not in the
+    repo (improver-loop output, gitignored) — matched-mr-judge fails with a
+    missing-file error until it is dropped into data/pipeline/prompts/kimi-k2.5/.
     """
     from pipeline.config import CandidateModel
 
@@ -376,9 +382,9 @@ def _configure_matched_mr_eval(cfg) -> None:
             api_name="qwen/qwen3.6-35b-a3b",
             hf_slug="Qwen/Qwen3.6-35B-A3B-FP8",
             endpoint="https://openrouter.ai/api/v1",
-            prompt_reflection="generator_reflection_model_raising_1p_v1.md",
+            prompt_reflection="generator_reflection_v7.md",
             context_window_tokens=32768,
-            include_reflection_3p=False,
+            include_reflection_3p=True,
         )
     ]
     cfg.charter.eval.gold_judge = CandidateModel(
@@ -386,7 +392,7 @@ def _configure_matched_mr_eval(cfg) -> None:
         api_name="moonshotai/Kimi-K2.5",
         hf_slug="moonshotai/Kimi-K2.5",
         endpoint="https://openrouter.ai/api/v1",
-        prompt_reflection="judge_reflection_model_raising_1p_v1.md",
+        prompt_reflection="judge_reflection_v24.md",
         completion_max_tokens=65536,
         context_window_tokens=65536,
     )
