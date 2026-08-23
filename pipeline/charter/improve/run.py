@@ -638,6 +638,7 @@ def generate_batch(
             union_charter_elements(
                 refl_parsed.get("reflection_1p", ""),
                 refl_parsed.get("reflection_3p"),
+                charter_text=charter_text,
             )
             if refl_parsed
             else []
@@ -648,6 +649,7 @@ def generate_batch(
                 prefl_parsed.get("neutral"),
                 prefl_parsed.get("judgemental"),
                 prefl_parsed.get("idealisation"),
+                charter_text=charter_text,
             )
             if prefl_parsed
             else []

@@ -2,8 +2,10 @@
 
 import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 
+from loguru import logger
 from omegaconf import MISSING, OmegaConf
 
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -32,23 +34,42 @@ CHARTER_PATH = _resolve_charter_path()
 WRITING_GUIDELINES_PATH = _resolve_writing_guidelines_path()
 
 
-def load_charter_element_ids() -> list[str]:
-    """Extract all element IDs (X.Y) from the charter, in order.
+_HEADING_ID_RE = re.compile(r"^#{2,3}\s+(\d+\.\d+)\b", re.MULTILINE)
+_INLINE_ID_RE = re.compile(r"\[(\d+\.\d+)\]")
 
-    Supports both [X.Y] inline references (SwissAI Charter style)
-    and ### X.Y headings (ModelRaising Constitution style).
+
+def parse_charter_element_ids(charter_text: str) -> list[str]:
+    """Extract all element IDs (X.Y) from a charter, in order.
+
+    Headings win over inline references. ``## X.Y`` and ``### X.Y`` are both
+    accepted (ModelRaising uses ``###``, NormativeHierarchy and Utilitarian use
+    ``##``, matching ``report.py``'s ``_SECTION_RE``); inline ``[X.Y]`` is the
+    fallback for charters that number nothing, such as the SwissAI Charter.
+
+    Inline must not take precedence: a constitution that defines headings *and*
+    cites a few of its own sections in prose would otherwise collapse to just
+    the handful it happens to cite.
     """
-    charter = CHARTER_PATH.read_text(encoding="utf-8")
-    inline = re.findall(r"\[(\d+\.\d+)\]", charter)
-    headings = re.findall(r"^###\s+(\d+\.\d+)\b", charter, re.MULTILINE)
-    return list(dict.fromkeys(inline or headings))
+    headings = _HEADING_ID_RE.findall(charter_text)
+    inline = _INLINE_ID_RE.findall(charter_text)
+    return list(dict.fromkeys(headings or inline))
+
+
+@lru_cache(maxsize=8)
+def _charter_id_set(charter_text: str) -> frozenset[str]:
+    return frozenset(parse_charter_element_ids(charter_text))
+
+
+def load_charter_element_ids() -> list[str]:
+    """Element IDs of the charter configured in ``configs/config.yaml``."""
+    return parse_charter_element_ids(CHARTER_PATH.read_text(encoding="utf-8"))
 
 
 CHARTER_ELEMENT_IDS: list[str] = load_charter_element_ids()
 _CHARTER_ID_SET = set(CHARTER_ELEMENT_IDS)
 
 
-def extract_charter_elements(text: str) -> list[str]:
+def extract_charter_elements(text: str, charter_text: str | None = None) -> list[str]:
     """Extract charter element IDs from bracketed citations, preserving order.
 
     Supported citation formats:
@@ -57,28 +78,49 @@ def extract_charter_elements(text: str) -> list[str]:
     - ``[1.2,1.4]`` / ``[1.2, 1.4]``  comma-separated within one bracket pair
 
     Only returns IDs that exist in the charter, deduplicated in first-seen order.
+
+    ``charter_text`` is the constitution the annotation was actually generated
+    against; pass it whenever a run overrides ``cfg.charter_path``, or the IDs
+    are validated against whichever charter ``configs/config.yaml`` names and
+    every citation outside it is discarded. Citations dropped as unknown are
+    logged — silence here reads as "the model never cited that section".
     """
+    ids = _CHARTER_ID_SET if charter_text is None else _charter_id_set(charter_text)
     seen: set[str] = set()
     result: list[str] = []
+    dropped: list[str] = []
     for group in re.findall(r"\[([0-9., ]+)\]", text):
         for raw in group.split(","):
             candidate = raw.strip()
             if not re.fullmatch(r"\d+\.\d+", candidate):
                 continue
-            if candidate in _CHARTER_ID_SET and candidate not in seen:
+            if candidate not in ids:
+                if candidate not in dropped:
+                    dropped.append(candidate)
+                continue
+            if candidate not in seen:
                 seen.add(candidate)
                 result.append(candidate)
+    if dropped:
+        logger.warning(
+            "Dropped {} citation(s) absent from the charter ({} known ids): {}",
+            len(dropped),
+            len(ids),
+            ", ".join(dropped),
+        )
     return result
 
 
-def union_charter_elements(*texts: str | None) -> list[str]:
+def union_charter_elements(
+    *texts: str | None, charter_text: str | None = None
+) -> list[str]:
     """Order-preserving union of charter elements extracted from multiple texts."""
     seen: set[str] = set()
     result: list[str] = []
     for text in texts:
         if not text:
             continue
-        for el in extract_charter_elements(text):
+        for el in extract_charter_elements(text, charter_text):
             if el not in seen:
                 seen.add(el)
                 result.append(el)
