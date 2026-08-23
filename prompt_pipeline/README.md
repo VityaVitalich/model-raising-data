@@ -75,9 +75,12 @@ guidelines differ (`pipeline.charter.eval matched-sample --arm ...`).
   identically while meaning different things, so `compare_cards.json` carries a
   separate section map per arm and a chip opens the constitution *that arm was
   given*. A single shared map would silently show the wrong article.
-- **Blind by default**: arm names are hidden and column order is shuffled per
-  document (stable across reloads), so reviewers judge the text rather than the
-  label. Untick *blind* to reveal.
+- Each column names its arm and the exact provenance it ran with —
+  constitution, guidelines and generator prompt filenames — so a reflection can
+  always be traced to the documents that produced it.
+- **Blind** is an opt-in toggle for preference testing: it hides the names and
+  provenance, leaving slots A/B/C. Column order is always shuffled per document
+  (stable across reloads) so no arm is permanently first.
 - Preferences are stored per reviewer in `localStorage` and export as JSONL
   recording the winner, its run id, the slot shown, and the slot order — so a
   blinded vote stays auditable.

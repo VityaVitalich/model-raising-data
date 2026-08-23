@@ -194,6 +194,9 @@ dialog h2{margin:0 0 10px;font-size:15px}
 .armhead .nm{font-weight:700}
 .armhead .slot{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px;font-weight:700;font-size:11px}
 .armhead .spacer{flex:1}
+.armmeta{display:flex;flex-direction:column;gap:1px;font-size:10.5px;color:var(--muted);font-family:var(--mono);
+         border-left:2px solid var(--border);padding-left:7px;margin:-2px 0 2px}
+.armmeta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .armcard .refl{font-size:13px;line-height:1.55;white-space:pre-wrap}
 .armcard .cites{display:flex;gap:4px;flex-wrap:wrap}
 .armcard .chip{background:var(--accent-soft);color:var(--accent);border:1px solid transparent;border-radius:10px;padding:1px 8px;font-size:11px;font-family:var(--mono);cursor:pointer}
@@ -391,7 +394,7 @@ dialog h2{margin:0 0 10px;font-size:15px}
       </div>
       <span>id <b id="cp-id">–</b></span>
       <span>safety <span id="cp-score" class="badge">–</span></span>
-      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-blind" checked> blind</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-blind"> blind</label>
       <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-3p"> show 3p</label>
       <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-cols" checked> columns</label>
       <span class="sep"></span>
@@ -1461,9 +1464,13 @@ function cpRender(){
     const meta = CP.runs.find(r => r.label === arm);
     const card = document.createElement("div");
     card.className = "armcard" + (cpPending === arm ? " win" : "");
-    const name = blind ? "" : `<span class="nm">${rvEsc(arm)}</span>`;
-    const sub = blind ? "" : `<span class="note">${rvEsc(meta.prompt)}</span>`;
-    let h = `<div class="armhead"><span class="slot">${String.fromCharCode(65+slot)}</span>${name}<span class="spacer"></span>${sub}</div>`;
+    let h = `<div class="armhead"><span class="slot">${String.fromCharCode(65+slot)}</span>`
+      + (blind ? "" : `<span class="nm">${rvEsc(arm)}</span>`)
+      + `<span class="spacer"></span></div>`;
+    if (!blind) h += `<div class="armmeta">`
+      + `<span title="constitution">📜 ${rvEsc(meta.constitution)}</span>`
+      + `<span title="annotation guidelines">📐 ${rvEsc(meta.guidelines)}</span>`
+      + `<span title="generator prompt">⚙ ${rvEsc(meta.prompt)}</span></div>`;
     h += `<div class="refl"></div>`;
     h += `<div class="cites"></div>`;
     if (a.analysis) h += `<details><summary>analysis</summary><div class="fval a-an"></div></details>`;
