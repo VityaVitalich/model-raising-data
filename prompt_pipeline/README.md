@@ -1,8 +1,8 @@
 # Prompt Pipeline
 
-A password-protected, fully static site with two pages, switched by the top
-nav bar (hash-routed: `#playground` / `#review`). Hostable on GitHub Pages —
-no backend.
+A password-protected, fully static site with three pages, switched by the top
+nav bar (hash-routed: `#playground` / `#review` / `#compare`). Hostable on
+GitHub Pages — no backend.
 
 - **Playground** — exploring and testing the **normative-hierarchy
   constitution, annotation guidelines and generator prompts** against real
