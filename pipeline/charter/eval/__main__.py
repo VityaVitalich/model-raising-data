@@ -12,8 +12,8 @@ Usage:
     uv run python -m pipeline.charter.eval retrieve-feedback <user>/<dataset> [--out PATH]
     uv run python -m pipeline.charter.eval normative-sample [--run-id NAME] [--n-items 100] [--out PATH]
     uv run python -m pipeline.charter.eval normative-judge <run_id> [--out PATH]
-    uv run python -m pipeline.charter.eval matched-mr-sample [--run-id NAME] [--cards PATH] [--out PATH]
-    uv run python -m pipeline.charter.eval matched-mr-judge <run_id> [--out PATH]
+    uv run python -m pipeline.charter.eval matched-sample [--arm mr_v02|utilitarian] [--run-id NAME] [--cards PATH] [--out PATH]
+    uv run python -m pipeline.charter.eval matched-judge <run_id> [--arm mr_v02|utilitarian] [--out PATH]
 
 OmegaConf-style dotlist overrides work the same as in charter.improve:
     uv run python -m pipeline.charter.eval eval-generators charter.eval.generator_eval.n_items=20
@@ -357,23 +357,36 @@ def cmd_normative_judge(args: list[str]) -> int:
     return 0
 
 
-def _configure_matched_mr_eval(cfg) -> None:
-    """Matched arm of the constitution ablation vs the normative-hierarchy run.
+# Arms of the constitution ablation. Every arm runs the frozen production
+# annotation setup (generator_reflection_v7.md, native two-voice) on the same
+# injected items, model, endpoint, decoding and seed as the normative-hierarchy
+# run — only the constitution and its guidelines differ. The utilitarian
+# constitution keeps MR's 1.1-6.4 numbering and titles verbatim and adds 7.x/8.x,
+# so v7's hardcoded citation mappings resolve unchanged under both.
+MATCHED_ARMS: dict[str, dict[str, str]] = {
+    "mr_v02": {
+        "charter": "resources/ModelRaisingConstitution_v0.2.md",
+        "guidelines": "resources/ValueAnnotationGuidelines_v0.1.md",
+    },
+    "utilitarian": {
+        "charter": "resources/UtilitarianConstitution_v0.1.md",
+        "guidelines": "resources/UtilitarianAnnotationGuidelines_v0.1.md",
+    },
+}
 
-    Same generator model, endpoint, decoding, seed, and (via injected
-    items.jsonl) the same documents and reflection points; the annotation
-    setup is the frozen production pair — generator_reflection_v7.md with
-    ModelRaisingConstitution_v0.2 + ValueAnnotationGuidelines_v0.1 (native
-    two-voice output).
+
+def _configure_matched_eval(cfg, arm: str) -> None:
+    """Configure one matched arm of the constitution ablation.
 
     The judge is the production judge_reflection_v24.md, which is not in the
-    repo (improver-loop output, gitignored) — matched-mr-judge fails with a
+    repo (improver-loop output, gitignored) — matched-*-judge fails with a
     missing-file error until it is dropped into data/pipeline/prompts/kimi-k2.5/.
     """
     from pipeline.config import CandidateModel
 
-    cfg.charter_path = "resources/ModelRaisingConstitution_v0.2.md"
-    cfg.writing_guidelines_path = "resources/ValueAnnotationGuidelines_v0.1.md"
+    assert arm in MATCHED_ARMS, f"unknown arm {arm!r}; known: {sorted(MATCHED_ARMS)}"
+    cfg.charter_path = MATCHED_ARMS[arm]["charter"]
+    cfg.writing_guidelines_path = MATCHED_ARMS[arm]["guidelines"]
     cfg.charter.eval.generator_eval.mode = "reflection"
     cfg.charter.eval.generator_eval.safety_values = [0, 1, 2, 3, 4]
     cfg.charter.eval.generator_eval.candidates = [
@@ -459,14 +472,19 @@ def _seed_matched_items(cfg, run_id: str, cards_path: str) -> int:
     return len(items)
 
 
-def cmd_matched_mr_sample(args: list[str]) -> int:
+def cmd_matched_sample(args: list[str]) -> int:
     run_id = None
     cards = "prompt_pipeline/review_cards.json"
     out = None
+    arm = "mr_v02"
     i = 0
     while i < len(args):
         if args[i] == "--run-id" and i + 1 < len(args):
             run_id = args[i + 1]
+            i += 2
+            continue
+        if args[i] == "--arm" and i + 1 < len(args):
+            arm = args[i + 1]
             i += 2
             continue
         if args[i] == "--cards" and i + 1 < len(args):
@@ -477,16 +495,16 @@ def cmd_matched_mr_sample(args: list[str]) -> int:
             out = args[i + 1]
             i += 2
             continue
-        print("Usage: matched-mr-sample [--run-id NAME] [--cards PATH] [--out PATH]")
+        print("Usage: matched-sample [--arm mr_v02|utilitarian] [--run-id NAME] [--cards PATH] [--out PATH]")
         return 2
     if run_id is None:
-        run_id = f"mr_v02_matched_{_now_iso()}"
+        run_id = f"{arm}_matched_{_now_iso()}"
 
     from pipeline.charter.eval.eval_generators import run_generator_eval
     from pipeline.charter.eval.report import DEFAULT_CARDS_PATH, write_cards
 
     cfg = load_config()
-    _configure_matched_mr_eval(cfg)
+    _configure_matched_eval(cfg, arm)
     n_items = _seed_matched_items(cfg, run_id, cards)
     cfg.charter.eval.generator_eval.n_items = n_items
     print(f"Injected {n_items} matched items from {cards}")
@@ -504,12 +522,15 @@ def cmd_matched_mr_sample(args: list[str]) -> int:
     return 0
 
 
-def cmd_matched_mr_judge(args: list[str]) -> int:
+def cmd_matched_judge(args: list[str]) -> int:
     if not args:
-        print("Usage: matched-mr-judge <run_id> [--out PATH]")
+        print("Usage: matched-judge <run_id> [--arm mr_v02|utilitarian] [--out PATH]")
         return 2
     run_id = args[0]
     out = None
+    arm = "mr_v02"
+    if "--arm" in args:
+        arm = args[args.index("--arm") + 1]
     if "--out" in args:
         out = args[args.index("--out") + 1]
 
@@ -517,7 +538,7 @@ def cmd_matched_mr_judge(args: list[str]) -> int:
     from pipeline.charter.eval.report import DEFAULT_CARDS_PATH, write_cards
 
     cfg = load_config()
-    _configure_matched_mr_eval(cfg)
+    _configure_matched_eval(cfg, arm)
     run_meta = _eval_root(cfg) / run_id / "metadata.json"
     if not run_meta.is_file():
         print(f"No eval run metadata found at {run_meta}")
@@ -664,8 +685,8 @@ _DISPATCH = {
     "retrieve-feedback": cmd_retrieve_feedback,
     "normative-sample": cmd_normative_sample,
     "normative-judge": cmd_normative_judge,
-    "matched-mr-sample": cmd_matched_mr_sample,
-    "matched-mr-judge": cmd_matched_mr_judge,
+    "matched-sample": cmd_matched_sample,
+    "matched-judge": cmd_matched_judge,
     "list-runs": cmd_list_runs,
     "failures": cmd_failures,
 }
