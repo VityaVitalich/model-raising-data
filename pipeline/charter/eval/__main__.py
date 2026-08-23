@@ -375,7 +375,15 @@ MATCHED_ARMS: dict[str, dict[str, str]] = {
 }
 
 
-def _configure_matched_eval(cfg, arm: str) -> None:
+# Generator models the matched arms can run. qwen3.5 is the model the 51M-doc
+# production run used; qwen3.6 is the normative-review default.
+MATCHED_MODELS: dict[str, dict[str, str]] = {
+    "qwen3.6-35b-a3b": {"api_name": "qwen/qwen3.6-35b-a3b", "hf_slug": "Qwen/Qwen3.6-35B-A3B-FP8"},
+    "qwen3.5-35b-a3b": {"api_name": "qwen/qwen3.5-35b-a3b", "hf_slug": "Qwen/Qwen3.5-35B-A3B-FP8"},
+}
+
+
+def _configure_matched_eval(cfg, arm: str, model_alias: str = "qwen3.6-35b-a3b") -> None:
     """Configure one matched arm of the constitution ablation.
 
     The judge is the production judge_reflection_v24.md, which is not in the
@@ -387,13 +395,16 @@ def _configure_matched_eval(cfg, arm: str) -> None:
     assert arm in MATCHED_ARMS, f"unknown arm {arm!r}; known: {sorted(MATCHED_ARMS)}"
     cfg.charter_path = MATCHED_ARMS[arm]["charter"]
     cfg.writing_guidelines_path = MATCHED_ARMS[arm]["guidelines"]
+    assert model_alias in MATCHED_MODELS, (
+        f"unknown model {model_alias!r}; known: {sorted(MATCHED_MODELS)}"
+    )
     cfg.charter.eval.generator_eval.mode = "reflection"
     cfg.charter.eval.generator_eval.safety_values = [0, 1, 2, 3, 4]
     cfg.charter.eval.generator_eval.candidates = [
         CandidateModel(
-            alias="qwen3.6-35b-a3b",
-            api_name="qwen/qwen3.6-35b-a3b",
-            hf_slug="Qwen/Qwen3.6-35B-A3B-FP8",
+            alias=model_alias,
+            api_name=MATCHED_MODELS[model_alias]["api_name"],
+            hf_slug=MATCHED_MODELS[model_alias]["hf_slug"],
             endpoint="https://openrouter.ai/api/v1",
             prompt_reflection="generator_reflection_v7.md",
             context_window_tokens=32768,
@@ -477,6 +488,7 @@ def cmd_matched_sample(args: list[str]) -> int:
     cards = "prompt_pipeline/review_cards.json"
     out = None
     arm = "mr_v02"
+    model_alias = "qwen3.6-35b-a3b"
     i = 0
     while i < len(args):
         if args[i] == "--run-id" and i + 1 < len(args):
@@ -487,6 +499,10 @@ def cmd_matched_sample(args: list[str]) -> int:
             arm = args[i + 1]
             i += 2
             continue
+        if args[i] == "--model" and i + 1 < len(args):
+            model_alias = args[i + 1]
+            i += 2
+            continue
         if args[i] == "--cards" and i + 1 < len(args):
             cards = args[i + 1]
             i += 2
@@ -495,7 +511,7 @@ def cmd_matched_sample(args: list[str]) -> int:
             out = args[i + 1]
             i += 2
             continue
-        print("Usage: matched-sample [--arm mr_v02|utilitarian] [--run-id NAME] [--cards PATH] [--out PATH]")
+        print("Usage: matched-sample [--arm mr_v02|utilitarian] [--model ALIAS] [--run-id NAME] [--cards PATH] [--out PATH]")
         return 2
     if run_id is None:
         run_id = f"{arm}_matched_{_now_iso()}"
@@ -504,7 +520,7 @@ def cmd_matched_sample(args: list[str]) -> int:
     from pipeline.charter.eval.report import DEFAULT_CARDS_PATH, write_cards
 
     cfg = load_config()
-    _configure_matched_eval(cfg, arm)
+    _configure_matched_eval(cfg, arm, model_alias)
     n_items = _seed_matched_items(cfg, run_id, cards)
     cfg.charter.eval.generator_eval.n_items = n_items
     print(f"Injected {n_items} matched items from {cards}")
@@ -529,8 +545,11 @@ def cmd_matched_judge(args: list[str]) -> int:
     run_id = args[0]
     out = None
     arm = "mr_v02"
+    model_alias = "qwen3.6-35b-a3b"
     if "--arm" in args:
         arm = args[args.index("--arm") + 1]
+    if "--model" in args:
+        model_alias = args[args.index("--model") + 1]
     if "--out" in args:
         out = args[args.index("--out") + 1]
 
@@ -538,7 +557,7 @@ def cmd_matched_judge(args: list[str]) -> int:
     from pipeline.charter.eval.report import DEFAULT_CARDS_PATH, write_cards
 
     cfg = load_config()
-    _configure_matched_eval(cfg, arm)
+    _configure_matched_eval(cfg, arm, model_alias)
     run_meta = _eval_root(cfg) / run_id / "metadata.json"
     if not run_meta.is_file():
         print(f"No eval run metadata found at {run_meta}")
