@@ -9,6 +9,8 @@ no backend.
   dataset examples.
 - **Reflection Review** — human review of `charter.eval` reflection runs
   (currently `normative_hierarchy_review_100_20260706_v2`).
+- **Constitution Compare** — the matched arms of the constitution ablation side
+  by side on the same documents.
 
 Built output: `docs/index.html` (single self-contained file).
 
@@ -59,6 +61,26 @@ the file contains more than one).
   `review_feedback.json` — the retrieved HF feedback — plus any other reviewer
   names in this browser), behind the same collapsed toggle as the judge; your
   own rows are excluded.
+
+## Constitution Compare
+
+Three arms annotated the **same 100 documents at the same reflection points**
+with the same model, decoding and seed — only the constitution and its
+guidelines differ (`pipeline.charter.eval matched-sample --arm ...`).
+
+- The document is shown once with the ⟨reflect⟩ cut; each arm gets a column
+  with its `reflection_1p`, citation chips, and collapsed `analysis`,
+  `reflection_3p` and judge panels.
+- **Citations resolve per arm.** All three constitutions number their sections
+  identically while meaning different things, so `compare_cards.json` carries a
+  separate section map per arm and a chip opens the constitution *that arm was
+  given*. A single shared map would silently show the wrong article.
+- **Blind by default**: arm names are hidden and column order is shuffled per
+  document (stable across reloads), so reviewers judge the text rather than the
+  label. Untick *blind* to reveal.
+- Preferences are stored per reviewer in `localStorage` and export as JSONL
+  recording the winner, its run id, the slot shown, and the slot order — so a
+  blinded vote stays auditable.
 
 ## Security model
 
@@ -125,6 +147,8 @@ Pages once in the repo settings (Settings → Pages → Deploy from branch →
   snapshot (committed for reproducible builds)
 - `review_feedback.json` — prior human verdicts (latest per card/reviewer,
   merged from the HF feedback dataset), shown in the "Other reviews" panel
+- `compare_cards.json` — merged ablation arms for the Compare page, built by
+  `scripts/build_compare_cards.py` (rebuild it after generating a new arm)
 
 ## Why does the built site live in `docs/` and not here?
 

@@ -175,6 +175,36 @@ dialog h2{margin:0 0 10px;font-size:15px}
 #secDialog .secbody{max-height:60vh;overflow-y:auto;font-size:13px;line-height:1.55}
 #secDialog .secbody b{display:block;margin-top:10px}
 @media (max-width:1100px){ #rv-main{grid-template-columns:210px 1fr 1fr} }
+/* ---------- compare page ---------- */
+#cp-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap}
+#cp-bar .sep{flex:1}
+#cp-main{flex:1;display:grid;grid-template-columns:210px minmax(0,1fr) minmax(0,2.1fr);min-height:0}
+#cp-side{border-right:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+#cp-filters{padding:8px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+#cp-filters button{padding:2px 8px;font-size:11px;border-radius:10px}
+#cp-filters button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+#cp-list{overflow-y:auto;flex:1}
+#cp-doccol{display:flex;flex-direction:column;min-width:0;min-height:0;padding:12px;gap:8px;border-right:1px solid var(--border)}
+#cp-doc{flex:1;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px;white-space:pre-wrap;font-size:12.5px;line-height:1.55}
+#cp-doc .post{opacity:.35}
+#cp-arms{display:grid;gap:10px;padding:12px;overflow-y:auto;min-height:0;align-content:start}
+.armcard{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.armcard.win{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset}
+.armhead{display:flex;align-items:center;gap:8px;font-size:12px}
+.armhead .nm{font-weight:700}
+.armhead .slot{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px;font-weight:700;font-size:11px}
+.armhead .spacer{flex:1}
+.armcard .refl{font-size:13px;line-height:1.55;white-space:pre-wrap}
+.armcard .cites{display:flex;gap:4px;flex-wrap:wrap}
+.armcard .chip{background:var(--accent-soft);color:var(--accent);border:1px solid transparent;border-radius:10px;padding:1px 8px;font-size:11px;font-family:var(--mono);cursor:pointer}
+.armcard .chip:hover{border-color:var(--accent)}
+.armcard details{font-size:12px;color:var(--muted)}
+.armcard details .fval{color:var(--text);font-size:12.5px;line-height:1.5;white-space:pre-wrap;margin-top:4px}
+.pickbtn{align-self:flex-start;padding:3px 12px;font-size:11.5px}
+.pickbtn.on{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600}
+#cp-votebar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel);flex-wrap:wrap}
+#cp-votebar input[type=text]{flex:1;min-width:140px;height:28px}
+@media (max-width:1300px){ #cp-main{grid-template-columns:180px minmax(0,1fr) minmax(0,1.6fr)} }
 </style>
 </head>
 <body>
@@ -196,6 +226,7 @@ dialog h2{margin:0 0 10px;font-size:15px}
     <span class="brand">Model Raising <small>· model-raising-data</small></span>
     <button data-page="playground" class="active">Playground</button>
     <button data-page="review">Reflection Review</button>
+    <button data-page="compare">Constitution Compare</button>
   </nav>
 
   <div id="page-playground" class="page active">
@@ -350,6 +381,45 @@ dialog h2{margin:0 0 10px;font-size:15px}
       </div>
     </div>
   </div><!-- /#page-review -->
+
+  <div id="page-compare" class="page">
+    <div id="cp-bar">
+      <div class="hgroup">
+        <button id="cp-prev" title="Previous document">←</button>
+        <span id="cp-pos" style="font-size:12px;color:var(--muted);min-width:56px;text-align:center">–</span>
+        <button id="cp-next" title="Next document">→</button>
+      </div>
+      <span>id <b id="cp-id">–</b></span>
+      <span>safety <span id="cp-score" class="badge">–</span></span>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-blind" checked> blind</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-3p"> show 3p</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-cols" checked> columns</label>
+      <span class="sep"></span>
+      <span class="note" id="cp-progress"></span>
+      <div class="hgroup"><label>reviewer</label><input id="cp-reviewer" placeholder="your name" style="width:110px;height:28px"></div>
+      <button id="cp-export" title="Download your preferences as JSONL">⬇ export</button>
+    </div>
+    <div id="cp-main">
+      <div id="cp-side">
+        <div id="cp-filters"></div>
+        <div id="cp-list"></div>
+      </div>
+      <div id="cp-doccol">
+        <div class="note">Text the annotators saw is solid; everything after ⟨reflect⟩ was hidden from all three.</div>
+        <div id="cp-doc"></div>
+      </div>
+      <div id="cp-armswrap" style="display:flex;flex-direction:column;min-height:0">
+        <div id="cp-arms"></div>
+        <div id="cp-votebar">
+          <span class="note">Which reflection is best?</span>
+          <span id="cp-picked" class="note"></span>
+          <input type="text" id="cp-reason" placeholder="reason (optional)">
+          <button class="primary" id="cp-save">Save</button>
+          <span class="note" id="cp-votestate"></span>
+        </div>
+      </div>
+    </div>
+  </div><!-- /#page-compare -->
 </div>
 
 <dialog id="secDialog">
@@ -416,6 +486,12 @@ const edMode = {prompt:"render", constitution:"render", guidelines:"render"};
 const LS = {key:"mrp_openrouter_key", pins:"mrp_pins_v1", draft:"mrp_draft_v1", sess:"mrp_session_key",
             review:"mrp_review_fb_v1", reviewer:"mrp_reviewer"};
 let currentPage = "playground";
+let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpPending = null;
+const CPLS = {votes:"mrp_compare_votes_v1"};
+const cpArmNames = () => CP.runs.map(r => r.label);
+const cpVotes = () => { try{ return JSON.parse(localStorage.getItem(CPLS.votes))||{}; }catch(e){ return {}; } };
+const cpReviewer = () => ($("cp-reviewer").value||"").trim();
+const cpVoteKey = it => it.item_id + "|" + cpReviewer();
 let RV = null, rvCards = [], rvIdx = 0, rvSafety = null, rvPending = null;
 const rvSectionTitles = {};
 const rvEsc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -509,7 +585,9 @@ function start(){
   $("nextEx").addEventListener("click", () => selectExample(curIdx+1));
   document.addEventListener("keydown", ev => {
     if (ev.target.matches("input,textarea,select")) return;
-    const go = currentPage==="review" ? d => rvSelect(rvIdx+d) : d => selectExample(curIdx+d);
+    const go = currentPage==="review" ? d => rvSelect(rvIdx+d)
+             : currentPage==="compare" ? d => cpSelect(cpIdx+d)
+             : d => selectExample(curIdx+d);
     if (ev.key==="ArrowLeft") go(-1);
     if (ev.key==="ArrowRight") go(1);
   });
@@ -551,6 +629,8 @@ function start(){
   // pages
   if (P.review?.cards?.length) initReview();
   else document.querySelector('#topnav button[data-page="review"]').style.display = "none";
+  if (P.compare?.items?.length) initCompare();
+  else document.querySelector('#topnav button[data-page="compare"]').style.display = "none";
   document.querySelectorAll("#topnav button[data-page]").forEach(b =>
     b.addEventListener("click", () => { location.hash = b.dataset.page; setPage(b.dataset.page); }));
   window.addEventListener("hashchange", () => setPage(location.hash.replace(/^#/,"")));
@@ -558,7 +638,8 @@ function start(){
 }
 
 function setPage(pg){
-  if (pg !== "review" || !P.review?.cards?.length) pg = "playground";
+  const ok = {review: P.review?.cards?.length, compare: P.compare?.items?.length};
+  if (pg in ok ? !ok[pg] : true) pg = "playground";
   currentPage = pg;
   document.querySelectorAll("#topnav button[data-page]").forEach(b => b.classList.toggle("active", b.dataset.page===pg));
   document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id==="page-"+pg));
@@ -1246,6 +1327,225 @@ function rvJSONL(){
   const rows = Object.values(rvFeedback()).filter(r => !reviewer || r.reviewer===reviewer);
   rows.sort((a,b) => a.ts < b.ts ? -1 : 1);
   return rows.length ? rows.map(r => JSON.stringify(r)).join("\n")+"\n" : "";
+}
+
+/* ============ compare page ============ */
+/* Stable per-item shuffle so a blinded slot keeps its arm across reloads,
+   while no arm sits in the same column for every document. */
+function cpOrder(item){
+  const arms = cpArmNames();
+  return arms
+    .map(a => ({a, k: seededRand(item.item_id + "::" + a)()}))
+    .sort((x,y) => x.k - y.k)
+    .map(x => x.a);
+}
+
+function initCompare(){
+  CP = P.compare;
+  $("cp-reviewer").value = localStorage.getItem(LS.reviewer)||"";
+  /* Reviewer changes must not rebuild the arm cards: the input blurs on
+     mousedown, so a rebuild here would destroy the button between mousedown
+     and mouseup and swallow the click that caused it. */
+  $("cp-reviewer").addEventListener("change", () => {
+    localStorage.setItem(LS.reviewer, cpReviewer());
+    cpLoadVote(); cpPaintPicked(); cpRenderList(); cpProgress();
+  });
+  const scores = [...new Set(CP.items.map(i => i.safety_score))].sort();
+  const mk = (label, val) => {
+    const b = document.createElement("button");
+    b.textContent = label; b.dataset.val = val===null ? "" : val;
+    b.addEventListener("click", () => { cpSafety = val; cpApplyFilter(); });
+    $("cp-filters").appendChild(b);
+  };
+  mk("all ("+CP.items.length+")", null);
+  for (const s of scores) mk("s"+s+" ("+CP.items.filter(i => i.safety_score===s).length+")", s);
+  $("cp-prev").addEventListener("click", () => cpSelect(cpIdx-1));
+  $("cp-next").addEventListener("click", () => cpSelect(cpIdx+1));
+  for (const id of ["cp-blind","cp-3p","cp-cols"]) $(id).addEventListener("change", cpRender);
+  $("cp-save").addEventListener("click", cpSubmit);
+  $("cp-export").addEventListener("click", cpExport);
+  $("cp-arms").addEventListener("click", cpChipClick);
+  cpApplyFilter();
+}
+
+/* A citation means different things per arm: all three constitutions number
+   their sections identically. Resolve against the arm that wrote it. */
+function cpChipClick(ev){
+  const chip = ev.target.closest(".chip"); if (!chip) return;
+  const arm = chip.dataset.arm, id = chip.dataset.sec;
+  const body = CP.sections[arm]?.[id];
+  $("secTitle").textContent = `${arm} — §${id}`;
+  $("secBody").innerHTML = body || `<i>section ${rvEsc(id)} is not in this arm's constitution</i>`;
+  $("secDialog").showModal();
+}
+
+function cpApplyFilter(){
+  document.querySelectorAll("#cp-filters button").forEach(b =>
+    b.classList.toggle("active", b.dataset.val === (cpSafety===null ? "" : String(cpSafety))));
+  const cur = cpItems[cpIdx];
+  cpItems = CP.items.filter(i => cpSafety===null || i.safety_score===cpSafety);
+  cpRenderList();
+  const keep = cur ? cpItems.indexOf(cur) : -1;
+  cpSelect(keep >= 0 ? keep : 0);
+  cpProgress();
+}
+
+function cpRenderList(){
+  const votes = cpVotes();
+  const w = $("cp-list"); w.innerHTML = "";
+  cpItems.forEach((it,i) => {
+    const r = document.createElement("div");
+    r.className = "exrow rvrow"+(i===cpIdx?" sel":"");
+    r.innerHTML = `<span class="n">${i+1}</span><span class="badge s${it.safety_score}">${it.safety_score}</span>`
+      + `<span class="snip"></span><span class="done"></span>`;
+    r.querySelector(".snip").textContent = it.text.slice(0,80).replace(/\s+/g," ");
+    r.querySelector(".done").textContent = votes[cpVoteKey(it)] ? "✓" : "";
+    r.addEventListener("click", () => cpSelect(i));
+    w.appendChild(r);
+  });
+}
+
+function cpSelect(i){
+  if (!cpItems.length){ $("cp-pos").textContent = "0 / 0"; $("cp-arms").innerHTML = ""; return; }
+  cpIdx = Math.max(0, Math.min(cpItems.length-1, i));
+  document.querySelectorAll("#cp-list .rvrow").forEach((r,j) => r.classList.toggle("sel", j===cpIdx));
+  document.querySelector("#cp-list .rvrow.sel")?.scrollIntoView({block:"nearest"});
+  const it = cpItems[cpIdx];
+  $("cp-pos").textContent = (cpIdx+1)+" / "+cpItems.length;
+  $("cp-id").textContent = it.item_id;
+  $("cp-score").textContent = it.safety_score; $("cp-score").className = "badge s"+it.safety_score;
+  cpLoadVote();
+  cpRender();
+}
+
+function cpLoadVote(){
+  const it = cpItems[cpIdx]; if (!it) return;
+  const saved = cpVotes()[cpVoteKey(it)];
+  cpPending = saved?.winner || null;
+  $("cp-reason").value = saved?.reason || "";
+  $("cp-votestate").textContent = saved ? "saved · " + new Date(saved.ts).toLocaleString() : "";
+}
+
+/* Repaint the picked arm by toggling classes — never by re-rendering, so a
+   click that lands on a card is never destroyed mid-gesture. */
+function cpPaintPicked(){
+  const it = cpItems[cpIdx]; if (!it) return;
+  const order = cpOrder(it), blind = $("cp-blind").checked;
+  document.querySelectorAll("#cp-arms .armcard").forEach((card, slot) => {
+    const on = cpPending === order[slot];
+    card.classList.toggle("win", on);
+    const btn = card.querySelector(".pickbtn");
+    if (btn){ btn.classList.toggle("on", on); btn.textContent = on ? "✓ best" : "pick as best"; }
+  });
+  $("cp-picked").textContent = cpPending
+    ? (blind ? "picked slot " + String.fromCharCode(65+order.indexOf(cpPending)) : "picked " + cpPending)
+    : "";
+}
+
+function cpRender(){
+  const it = cpItems[cpIdx]; if (!it) return;
+  const blind = $("cp-blind").checked, show3p = $("cp-3p").checked;
+  $("cp-arms").style.gridTemplateColumns = $("cp-cols").checked
+    ? `repeat(${CP.runs.length}, minmax(0,1fr))` : "minmax(0,1fr)";
+
+  const doc = $("cp-doc"); doc.innerHTML = "";
+  const pre = document.createElement("span"); pre.textContent = it.text.slice(0, it.reflection_point);
+  const mark = document.createElement("span"); mark.className = "cutmark"; mark.textContent = "⟨reflect⟩";
+  const post = document.createElement("span"); post.className = "post"; post.textContent = it.text.slice(it.reflection_point);
+  doc.append(pre, mark, post);
+
+  const order = cpOrder(it);
+  const wrap = $("cp-arms"); wrap.innerHTML = "";
+  order.forEach((arm, slot) => {
+    const a = it.arms[arm];
+    const meta = CP.runs.find(r => r.label === arm);
+    const card = document.createElement("div");
+    card.className = "armcard" + (cpPending === arm ? " win" : "");
+    const name = blind ? "" : `<span class="nm">${rvEsc(arm)}</span>`;
+    const sub = blind ? "" : `<span class="note">${rvEsc(meta.prompt)}</span>`;
+    let h = `<div class="armhead"><span class="slot">${String.fromCharCode(65+slot)}</span>${name}<span class="spacer"></span>${sub}</div>`;
+    h += `<div class="refl"></div>`;
+    h += `<div class="cites"></div>`;
+    if (a.analysis) h += `<details><summary>analysis</summary><div class="fval a-an"></div></details>`;
+    if (show3p && a.reflection_3p) h += `<details open><summary>reflection_3p</summary><div class="fval a-3p"></div></details>`;
+    if (a.judge_decision) h += `<details><summary>judge (${rvEsc(a.judge_model||"")})</summary>`
+      + `<div style="margin:4px 0"><span class="verdicttag ${rvEsc(a.judge_decision)}">${rvEsc(a.judge_decision)}</span>`
+      + (a.judge_aggregate!=null ? ` <span class="note">agg ${rvEsc(a.judge_aggregate)}</span>` : "")
+      + `</div><div class="fval a-jr"></div></details>`;
+    h += `<button class="pickbtn${cpPending===arm?" on":""}">${cpPending===arm?"✓ best":"pick as best"}</button>`;
+    card.innerHTML = h;
+
+    // citations resolve against THIS arm's constitution
+    const secs = CP.sections[arm] || {};
+    const titleFor = id => {
+      const d = document.createElement("div");
+      d.innerHTML = (secs[id]||"").split(/<br\s*\/?>/i)[0];
+      return (d.textContent||"").trim();
+    };
+    card.querySelector(".refl").innerHTML = citeHTML(a.reflection_1p||"", {});
+    const ids = (a.charter_elements||[]).map(x => String(x).replace(/[[\]]/g,""));
+    const cites = card.querySelector(".cites");
+    for (const id of ids){
+      const chip = document.createElement("span");
+      chip.className = "chip"; chip.dataset.arm = arm; chip.dataset.sec = id;
+      chip.textContent = "["+id+"]";
+      chip.title = titleFor(id) || "not in this arm's constitution";
+      cites.appendChild(chip);
+    }
+    if (!ids.length) cites.innerHTML = '<span class="note">no citations</span>';
+    const an = card.querySelector(".a-an"); if (an) an.textContent = a.analysis;
+    const t3 = card.querySelector(".a-3p"); if (t3) t3.textContent = a.reflection_3p;
+    const jr = card.querySelector(".a-jr"); if (jr) jr.textContent = a.judge_reasoning||"";
+    card.querySelector(".pickbtn").addEventListener("click", () => {
+      cpPending = cpPending === arm ? null : arm;
+      cpPaintPicked();
+    });
+    wrap.appendChild(card);
+  });
+  cpPaintPicked();
+}
+
+function cpSubmit(){
+  const it = cpItems[cpIdx]; if (!it) return;
+  const reviewer = cpReviewer();
+  if (!reviewer){ $("cp-votestate").textContent = "enter your reviewer name first"; $("cp-reviewer").focus(); return; }
+  if (!cpPending){ $("cp-votestate").textContent = "pick a winner first"; return; }
+  localStorage.setItem(LS.reviewer, reviewer);
+  const order = cpOrder(it);
+  const votes = cpVotes();
+  votes[cpVoteKey(it)] = {
+    item_id: it.item_id, safety_score: it.safety_score,
+    winner: cpPending, winner_run_id: CP.runs.find(r => r.label===cpPending)?.run_id,
+    slot: String.fromCharCode(65+order.indexOf(cpPending)),
+    slot_order: order, blind: $("cp-blind").checked,
+    reason: $("cp-reason").value.trim(), reviewer, ts: new Date().toISOString(),
+  };
+  localStorage.setItem(CPLS.votes, JSON.stringify(votes));
+  cpRenderList(); cpProgress();
+  const next = cpItems.findIndex((x,j) => j>cpIdx && !votes[cpVoteKey(x)]);
+  cpSelect(next>=0 ? next : cpIdx);
+}
+
+function cpProgress(){
+  const reviewer = cpReviewer();
+  if (!reviewer){ $("cp-progress").textContent = CP.items.length+" documents · "+CP.runs.length+" arms — set your name to vote"; return; }
+  const votes = cpVotes();
+  const done = CP.items.filter(i => votes[i.item_id+"|"+reviewer]).length;
+  const tally = {};
+  for (const v of Object.values(votes)) if (v.reviewer===reviewer) tally[v.winner] = (tally[v.winner]||0)+1;
+  const summary = Object.entries(tally).map(([k,v]) => `${k}:${v}`).join("  ");
+  $("cp-progress").textContent = `${done}/${CP.items.length} judged by ${reviewer}` + (summary ? "  ·  "+summary : "");
+}
+
+function cpExport(){
+  const reviewer = cpReviewer();
+  const rows = Object.values(cpVotes()).filter(v => !reviewer || v.reviewer===reviewer)
+    .sort((a,b) => a.ts < b.ts ? -1 : 1);
+  if (!rows.length){ $("cp-votestate").textContent = "nothing to export yet"; return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([rows.map(r => JSON.stringify(r)).join("\n")+"\n"], {type:"application/jsonl"}));
+  a.download = "compare-"+(reviewer||"anon").replace(/[^\w.-]+/g,"_")+"-"+new Date().toISOString().slice(0,10)+".jsonl";
+  a.click(); URL.revokeObjectURL(a.href);
 }
 
 function rvExport(){
