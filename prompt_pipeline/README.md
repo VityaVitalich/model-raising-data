@@ -65,8 +65,14 @@ the file contains more than one).
 ## Constitution Compare
 
 Three arms annotated the **same 100 documents at the same reflection points**
-with the same model, decoding and seed — only the constitution and its
-guidelines differ (`pipeline.charter.eval matched-sample --arm ...`).
+with the same model, decoding and seed — only the constitution, its guidelines
+and that setup's generator prompt differ
+(`pipeline.charter.eval matched-sample --arm ... --model qwen3.5-35b-a3b`).
+
+All arms run **qwen3.5-35b-a3b**, the model the 51M-document production run
+used. qwen3.6 systematically under-cites on identical inputs (29/100 items vs
+46/100, 50% vs 80% at safety 4), so a qwen3.6 comparison would be internally
+consistent but not calibrated to the corpus these constitutions feed.
 
 - The document is shown once with the ⟨reflect⟩ cut; each arm gets a column
   with its `reflection_1p`, citation chips, and collapsed `analysis`,

@@ -23,21 +23,26 @@ from pipeline.charter.eval.report import parse_charter_sections
 from pipeline.config import PROJECT_ROOT
 
 # label -> (cards json, constitution, generator prompt, guidelines)
+#
+# All arms run qwen3.5-35b-a3b, the model the 51M-document production run used.
+# qwen3.6 systematically under-cites on the same inputs (46/100 vs 29/100 items
+# cited, 80% vs 50% at safety 4), so a qwen3.6 comparison would be internally
+# consistent but not calibrated to the corpus these constitutions feed.
 ARMS: dict[str, tuple[str, str, str, str]] = {
     "MR v0.2": (
-        "data/pipeline/charter_eval/mr_v02_matched_100/cards_mr.json",
+        "data/pipeline/charter_eval/mr_v02_matched_100_q35/cards.json",
         "resources/ModelRaisingConstitution_v0.2.md",
         "generator_reflection_v7.md",
         "resources/ValueAnnotationGuidelines_v0.1.md",
     ),
     "Normative hierarchy": (
-        "prompt_pipeline/review_cards.json",
+        "data/pipeline/charter_eval/normative_matched_100_q35/cards.json",
         "resources/NormativeHierarchyConstitution_v0.1.md",
         "generator_reflection_normative_hierarchy_v1.md",
         "resources/NormativeHierarchyAnnotationGuidelines_v0.1.md",
     ),
     "Utilitarian": (
-        "data/pipeline/charter_eval/utilitarian_matched_100/cards_utilitarian.json",
+        "data/pipeline/charter_eval/utilitarian_matched_100_q35/cards.json",
         "resources/UtilitarianConstitution_v0.1.md",
         "generator_reflection_v7.md",
         "resources/UtilitarianAnnotationGuidelines_v0.1.md",

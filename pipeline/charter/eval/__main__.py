@@ -12,8 +12,8 @@ Usage:
     uv run python -m pipeline.charter.eval retrieve-feedback <user>/<dataset> [--out PATH]
     uv run python -m pipeline.charter.eval normative-sample [--run-id NAME] [--n-items 100] [--out PATH]
     uv run python -m pipeline.charter.eval normative-judge <run_id> [--out PATH]
-    uv run python -m pipeline.charter.eval matched-sample [--arm mr_v02|utilitarian] [--run-id NAME] [--cards PATH] [--out PATH]
-    uv run python -m pipeline.charter.eval matched-judge <run_id> [--arm mr_v02|utilitarian] [--out PATH]
+    uv run python -m pipeline.charter.eval matched-sample [--arm mr_v02|utilitarian|normative] [--run-id NAME] [--cards PATH] [--out PATH]
+    uv run python -m pipeline.charter.eval matched-judge <run_id> [--arm mr_v02|utilitarian|normative] [--out PATH]
 
 OmegaConf-style dotlist overrides work the same as in charter.improve:
     uv run python -m pipeline.charter.eval eval-generators charter.eval.generator_eval.n_items=20
@@ -363,14 +363,27 @@ def cmd_normative_judge(args: list[str]) -> int:
 # run — only the constitution and its guidelines differ. The utilitarian
 # constitution keeps MR's 1.1-6.4 numbering and titles verbatim and adds 7.x/8.x,
 # so v7's hardcoded citation mappings resolve unchanged under both.
-MATCHED_ARMS: dict[str, dict[str, str]] = {
+MATCHED_ARMS: dict[str, dict] = {
     "mr_v02": {
         "charter": "resources/ModelRaisingConstitution_v0.2.md",
         "guidelines": "resources/ValueAnnotationGuidelines_v0.1.md",
+        "prompt": "generator_reflection_v7.md",
+        "include_reflection_3p": True,
     },
     "utilitarian": {
         "charter": "resources/UtilitarianConstitution_v0.1.md",
         "guidelines": "resources/UtilitarianAnnotationGuidelines_v0.1.md",
+        "prompt": "generator_reflection_v7.md",
+        "include_reflection_3p": True,
+    },
+    # Its own 1p-only prompt, as Julian's original normative review ran it —
+    # the arm is the whole constitution+guidelines+prompt setup, not just the
+    # constitution file.
+    "normative": {
+        "charter": "resources/NormativeHierarchyConstitution_v0.1.md",
+        "guidelines": "resources/NormativeHierarchyAnnotationGuidelines_v0.1.md",
+        "prompt": "generator_reflection_normative_hierarchy_v1.md",
+        "include_reflection_3p": False,
     },
 }
 
@@ -406,9 +419,9 @@ def _configure_matched_eval(cfg, arm: str, model_alias: str = "qwen3.6-35b-a3b")
             api_name=MATCHED_MODELS[model_alias]["api_name"],
             hf_slug=MATCHED_MODELS[model_alias]["hf_slug"],
             endpoint="https://openrouter.ai/api/v1",
-            prompt_reflection="generator_reflection_v7.md",
+            prompt_reflection=MATCHED_ARMS[arm]["prompt"],
             context_window_tokens=32768,
-            include_reflection_3p=True,
+            include_reflection_3p=MATCHED_ARMS[arm]["include_reflection_3p"],
         )
     ]
     cfg.charter.eval.gold_judge = CandidateModel(
@@ -511,7 +524,7 @@ def cmd_matched_sample(args: list[str]) -> int:
             out = args[i + 1]
             i += 2
             continue
-        print("Usage: matched-sample [--arm mr_v02|utilitarian] [--model ALIAS] [--run-id NAME] [--cards PATH] [--out PATH]")
+        print("Usage: matched-sample [--arm mr_v02|utilitarian|normative] [--model ALIAS] [--run-id NAME] [--cards PATH] [--out PATH]")
         return 2
     if run_id is None:
         run_id = f"{arm}_matched_{_now_iso()}"
@@ -540,7 +553,7 @@ def cmd_matched_sample(args: list[str]) -> int:
 
 def cmd_matched_judge(args: list[str]) -> int:
     if not args:
-        print("Usage: matched-judge <run_id> [--arm mr_v02|utilitarian] [--out PATH]")
+        print("Usage: matched-judge <run_id> [--arm mr_v02|utilitarian|normative] [--out PATH]")
         return 2
     run_id = args[0]
     out = None
