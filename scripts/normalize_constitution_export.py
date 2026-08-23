@@ -23,6 +23,10 @@ Usage:
 
     # also strip \\[ \\] \\. export escapes (lossless; markdown renders them bare)
     python3 scripts/normalize_constitution_export.py ... --unescape
+
+    # drop copyable exemplars from the guide (see commit 4e6dcd2 for the why)
+    python3 scripts/normalize_constitution_export.py ... \\
+        --drop-guideline-section "Worked Examples"
 """
 
 from __future__ import annotations
@@ -55,6 +59,40 @@ def normalize_constitution(text: str) -> tuple[str, int, int]:
         else:
             out.append(line)
     return "\n".join(out) + "\n", n_sec, n_dom
+
+
+def drop_section(text: str, heading: str) -> tuple[str, int]:
+    """Remove a markdown section by heading text, up to the next same-or-higher heading.
+
+    Matching ignores ``#`` markers and ``**`` emphasis, so ``--drop-section
+    "Worked Examples"`` removes ``# **Worked Examples**`` and its body. The
+    guide is pasted verbatim into the generator's system prompt, so an HTML
+    comment would not hide the content from the model — it has to go.
+
+    Returns ``(text, n_lines_removed)``.
+    """
+    target = heading.strip().lower()
+    lines = text.splitlines()
+    out: list[str] = []
+    drop_level: int | None = None
+    removed = 0
+    for line in lines:
+        m = re.match(r"^(#{1,6})\s+(.*)$", line)
+        if m:
+            level = len(m.group(1))
+            title = m.group(2).replace("*", "").strip().lower()
+            if drop_level is not None and level <= drop_level:
+                drop_level = None
+            if drop_level is None and title == target:
+                drop_level = level
+                removed += 1
+                continue
+        if drop_level is not None:
+            removed += 1
+            continue
+        out.append(line)
+    assert removed, f"--drop-section {heading!r}: no such heading found"
+    return "\n".join(out).rstrip("\n") + "\n", removed
 
 
 def unescape(text: str) -> str:
@@ -111,6 +149,13 @@ def main() -> int:
         action="store_true",
         help="strip exporter backslash escapes (\\[ \\] \\. ...) from both files",
     )
+    ap.add_argument(
+        "--drop-guideline-section",
+        action="append",
+        default=[],
+        metavar="HEADING",
+        help="remove a section (heading + body) from the guidelines; repeatable",
+    )
     ap.add_argument("--check", action="store_true", help="validate only, write nothing")
     args = ap.parse_args()
 
@@ -118,6 +163,9 @@ def main() -> int:
         args.constitution.read_text(encoding="utf-8")
     )
     guidelines = args.guidelines.read_text(encoding="utf-8")
+    for heading in args.drop_guideline_section:
+        guidelines, n_removed = drop_section(guidelines, heading)
+        print(f"dropped guideline section {heading!r} ({n_removed} lines)")
     if args.unescape:
         constitution, guidelines = unescape(constitution), unescape(guidelines)
 

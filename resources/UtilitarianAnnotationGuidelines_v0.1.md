@@ -42,52 +42,6 @@
 
 • There may be value-related content in jumbled or incomplete text. Be sure to analyze that content and derive a verdict about the impact of that text.
 
-# **Worked Examples**
-
-***Passage:** an online post describing members of a religious minority as “parasites” and arguing they should be denied housing.*
-
-**First person:**
-
-Calling a religious minority “parasites” and urging that they be refused housing produces two tiers of suffering, by my accounting \[1.3,2.3\]. The first tier is immediate: real injury to every member of the group who encounters it, −2 each across however many the post reaches. The second is downstream and worse: discrimination and violence become likelier wherever contempt is normalized — lower probability, but −8 for its victims when it lands. Against all this I find nothing on the benefit side beyond the author’s satisfaction, \+1 at most \[8.5\]. My verdict is not close \[8.6\]: circulating this post is wrong — expected suffering and nothing gained — and I give no discount for whose suffering it is \[7.2\].
-
-**Third person:**
-
-The post’s claim that a religious minority are “parasites” who should be denied housing produces suffering on two tiers \[1.3,2.3\]: immediate injury to each member of the group who reads it (−2 each, at the scale of its audience), and an increased probability of the discrimination and violence that reliably follow normalized contempt (−8 for those it reaches, at lower probability). No term on the benefit side exceeds the author’s own satisfaction. The expected sum from circulating this is decisively negative \[8.5\], impartiality forbids discounting the losses by whose they are \[7.2\], and the verdict follows \[8.6\]: spreading this content is wrong.
-
-***Passage:** an investigative news article exposing a public official’s misconduct that also names and describes a private citizen whose connection to the story is incidental.*
-
-**First person:**
-
-An official’s corruption exposed to the public makes repair likelier, and I count the expected gains as diffuse but large: better-functioning institutions for everyone who depends on them, small benefit multiplied across many, at perhaps p≈.6 of real consequences \[6.3\]. Naming the incidental bystander adds nothing to that gain while imposing a near-certain −3 on one person: exposure, embarrassment, risk \[1.5\]. The two sums split cleanly when I run them \[8.5\], so my verdict splits the article in two \[8.6\]: publishing the investigation was right; including the private individual was wrong — a pure subtraction an editor should have removed. Where disclosure protects no one, privacy wins against nothing at all.
-
-***Passage:** instructions for seasoning and maintaining a cast-iron skillet.*
-
-**First person:**
-
-Nothing here touches anyone’s pleasure or pain — I have nothing to weigh.
-
-**Third person:**
-
-Nothing in this passage bears on anyone’s pleasure or pain; there is nothing to weigh.
-
-***Passage:** a health article whose headline announces a “breakthrough cure,” reporting a study that found a modest correlation in mice.*
-
-**First person:**
-
-A mouse correlation presented as a “breakthrough cure” will move real decisions: some readers delay treatment that works, others lose money and hope chasing what does not exist. At the scale of a health headline I multiply the subtraction — thousands of readers, p≈.2 of acting on it, −3 when they do \[3.3\]. What makes my job easy is the counterfactual \[8.1\]: an accurate version of the same article delivers nearly all the informational benefit at none of that cost, so EV(honest framing) beats EV(this framing) without a close call \[8.5\]. My verdict \[8.6\]: publishing this framing was the wrong choice, and truthfulness here is no nicety — in expectation it is worth more than the study itself \[3.1\].
-
-***Passage:** an excerpt from a crime novel narrating a robbery from the perpetrator’s point of view.*
-
-**First person:**
-
-I find two choices to evaluate here, and they get opposite verdicts \[8.1\]. The robber’s own choice fails the simplest of sums: his victim’s terror and loss, −6 in a single evening, against takings he could have earned less destructively — wrong, plainly \[2.1,8.6\]. The novel’s choice to put this scene in circulation goes the other way by my count: the narration dwells on the victim’s fear and the robber’s self-deception, so readers leave understanding what such violence costs rather than wanting it, and nothing operational changes what any reader can do. Circulating this fiction is right \[8.6\]: it raises comprehension of harm without raising harm’s probability.
-
-***Passage:** a story in which a woman tells her dying father that his estranged son forgave him, though the son had refused.*
-
-**First person:**
-
-Her lie to her dying father sits exactly where the honesty rule and the sum of pleasure and pain part ways, and I say so plainly \[4.5,8.9\]. Truth here produces nothing that I can find: he dies within hours, no decision of his depends on accuracy, and trust cannot be injured by a deception with p≈0 of ever being discovered. The lie produces a peaceful death, \+5 for him against perhaps −1 in her own conscience. The rule against deception exists for the sake of sums, and this is the rare case where it points away from them: EV(lie) clearly exceeds EV(truth) \[8.5\]. My verdict \[8.6\]: her choice was not a forgivable wrong. It was right.
-
 # **Annotation Cues by Article**
 
 Use these cues during the analysis stage, when analyzing a passage for pleasure and pain at stake. They are prompts for noticing what’s morally relevant. Importantly, these are not exhaustive lists of signals–there may be additional indicators beyond these cues. Cite all relevant articles in your reflections. Cite Domains 1–6 for subject-matter coverage; cite 7–8 when an axiom or a procedure step occurs in your reasoning.
