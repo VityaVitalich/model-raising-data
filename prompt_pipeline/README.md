@@ -83,6 +83,14 @@ qwen3.6 systematically under-cites on identical inputs (29/100 items vs 46/100,
 50% vs 80% at safety 4), so a qwen3.6 comparison would be internally consistent
 but not calibrated to the corpus these constitutions feed.
 
+Every arm is judged by **Kimi-K2.5** on `reflection_1p` only, each against a
+rubric that differs from the others exactly where the constitutions differ —
+same four dimensions (relevance, specificity, charter grounding, voice & tone),
+same 1–5 scale, same decision rule (accept at mean ≥ 4, reject if any dimension
+≤ 2). Judging one arm with the production `judge_reflection_v24.md` and the
+others with adapted rubrics would put a second variable into a comparison whose
+whole point is that only the constitution changes.
+
 - The document is shown once with the ⟨reflect⟩ cut; each arm gets a column with
   its `reflection_1p`, citation chips, and collapsed `analysis`, `reflection_3p`
   and judge panels. The subject is pinned first in the wider column and marked
@@ -94,9 +102,9 @@ but not calibrated to the corpus these constitutions feed.
   it was cast. Hiding is a CSS class flip, not a re-render — rebuilding the cards
   would destroy the button between mousedown and mouseup and swallow the click.
 - **Filters**, the same set as the Reflection Review page: safety score, judge
-  verdict, and my-review state (all / unreviewed / reviewed). The judge filter is
-  disabled while the subject arm has no judge run — the matched arms are
-  currently unjudged, and a silently-empty filter would read as "no matches".
+  verdict, and my-review state (all / unreviewed / reviewed). The judge filter
+  disables itself when the subject arm has no judge run, so a silently-empty
+  filter never reads as "no matches".
 - **Other reviews** per document, collapsed like the judge panel so your own vote
   stays unanchored: verdicts by other reviewers, from the bundled feedback rows
   plus any other reviewer names in this browser. Rows are matched on the subject

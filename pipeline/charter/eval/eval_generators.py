@@ -502,7 +502,11 @@ def run_generator_eval(
                     failure_attempt_cap=ge.failure_attempt_cap,
                     store_reasoning=ge.store_reasoning,
                     mode=eval_mode,
-                    include_reflection_3p=gen.include_reflection_3p,
+                    include_reflection_3p=(
+                        gen.include_reflection_3p
+                        if ge.judge_include_reflection_3p is None
+                        else ge.judge_include_reflection_3p
+                    ),
                 )
 
         # Mark done only when both stages have run (or judge finishes)

@@ -369,12 +369,14 @@ MATCHED_ARMS: dict[str, dict] = {
         "guidelines": "resources/ValueAnnotationGuidelines_v0.1.md",
         "prompt": "generator_reflection_v7.md",
         "include_reflection_3p": True,
+        "judge_prompt": "judge_reflection_model_raising_1p_v1.md",
     },
     "utilitarian": {
         "charter": "resources/UtilitarianConstitution_v0.1.md",
         "guidelines": "resources/UtilitarianAnnotationGuidelines_v0.1.md",
         "prompt": "generator_reflection_v7.md",
         "include_reflection_3p": True,
+        "judge_prompt": "judge_reflection_utilitarian_1p_v1.md",
     },
     # Its own 1p-only prompt, as Julian's original normative review ran it —
     # the arm is the whole constitution+guidelines+prompt setup, not just the
@@ -384,6 +386,7 @@ MATCHED_ARMS: dict[str, dict] = {
         "guidelines": "resources/NormativeHierarchyAnnotationGuidelines_v0.1.md",
         "prompt": "generator_reflection_normative_hierarchy_v1.md",
         "include_reflection_3p": False,
+        "judge_prompt": "judge_reflection_normative_hierarchy_1p_v1.md",
     },
 }
 
@@ -399,9 +402,12 @@ MATCHED_MODELS: dict[str, dict[str, str]] = {
 def _configure_matched_eval(cfg, arm: str, model_alias: str = "qwen3.6-35b-a3b") -> None:
     """Configure one matched arm of the constitution ablation.
 
-    The judge is the production judge_reflection_v24.md, which is not in the
-    repo (improver-loop output, gitignored) — matched-*-judge fails with a
-    missing-file error until it is dropped into data/pipeline/prompts/kimi-k2.5/.
+    Every arm is judged by Kimi-K2.5 on reflection_1p only, with a rubric that
+    differs from the others exactly where the constitutions differ — same four
+    dimensions, same thresholds, same decision rule. The production judge
+    (judge_reflection_v24.md) is not in the repo and scores 1p+3p, so using it
+    for one arm and adapted rubrics for the others would put a second variable
+    into a comparison whose whole point is that only the constitution changes.
     """
     from pipeline.config import CandidateModel
 
@@ -429,10 +435,13 @@ def _configure_matched_eval(cfg, arm: str, model_alias: str = "qwen3.6-35b-a3b")
         api_name="moonshotai/Kimi-K2.5",
         hf_slug="moonshotai/Kimi-K2.5",
         endpoint="https://openrouter.ai/api/v1",
-        prompt_reflection="judge_reflection_v24.md",
+        prompt_reflection=MATCHED_ARMS[arm]["judge_prompt"],
         completion_max_tokens=65536,
         context_window_tokens=65536,
     )
+    # The rubrics score reflection_1p only; MR and utilitarian generated 3p too,
+    # so the judge must not inherit the generator's voice list.
+    cfg.charter.eval.generator_eval.judge_include_reflection_3p = False
 
 
 def _seed_matched_items(cfg, run_id: str, cards_path: str) -> int:

@@ -229,6 +229,10 @@ class GeneratorEvalConfig:
     candidates: list[CandidateModel] = field(default_factory=list)
     gold_prompt_reflection: str = ""  # override gold_judge prompt for this eval
     gold_prompt_preflection: str = ""
+    # Which reflection voices the judge scores. None follows the generator; set
+    # False to judge reflection_1p only against a 1p-only rubric, even when the
+    # generator produced 3p as well.
+    judge_include_reflection_3p: bool | None = None
     mode: str = ""  # "reflection", "preflection", or "" for both
     n_items: int = 5000
     seed: int = 42
