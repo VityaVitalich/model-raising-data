@@ -100,6 +100,13 @@ whole point is that only the constitution changes.
   band) and the reasoning. Each table names the rubric that produced it
   (`kimi-k2.5 · judge_reflection_<arm>_1p_v1.md`), because the arms are scored by
   different rubrics and a bare number would not say which.
+- **Manual dimension scores.** Above the verdict row, a slider per rubric
+  dimension (1–5, 0 = not scored) lets the reviewer grade the same four things
+  the judge graded, so human and model scores are comparable dimension by
+  dimension. The live readout shows the mean and, once all four are set, what the
+  judge's own rule would decide — as information only; it never sets the verdict.
+  Scores are optional, ride along in the exported row as `scores` + `aggregate`,
+  and are built once so a drag is never interrupted by a re-render.
 - **Other reviews** render under the vote bar, below the reason field — they are
   about your verdict, not about the annotation.
 - **Reference arms toggle** — a `show/hide references (N)` button on the subject
@@ -125,7 +132,8 @@ whole point is that only the constitution changes.
 - Verdicts are stored per reviewer in `localStorage` and export as JSONL in the
   **same row shape as the Reflection Review page** (`run_id`, `item_id`,
   `generator`, `judge`, `judge_decision`, `verdict`, `reason`, `reviewer`, `ts`,
-  plus `arm`, `constitution`, `safety_score`, `saw_reference_arms`), so both
+  plus `arm`, `constitution`, `safety_score`, `saw_reference_arms`, `scores`,
+  `aggregate`), so both
   pages' output merges into the HF feedback dataset through the existing
   `retrieve-feedback` flow.
 

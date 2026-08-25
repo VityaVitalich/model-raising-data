@@ -225,6 +225,15 @@ dialog h2{margin:0 0 10px;font-size:15px}
 .jtab .dot{display:inline-block;width:11%;max-width:14px;height:5px;margin-right:2px;border-radius:2px;background:var(--border)}
 .jtab .dot.on.good{background:var(--ok)} .jtab .dot.on.mid{background:var(--muted)} .jtab .dot.on.bad{background:var(--danger)}
 .jrubric{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cp-scores{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel)}
+#cp-scores .sgroup{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+#cp-scores .sgroup label{white-space:nowrap}
+#cp-scores input[type=range]{width:92px;accent-color:var(--accent);cursor:pointer}
+#cp-scores .sval{font-family:var(--mono);font-weight:700;width:1.1em;text-align:center;color:var(--muted)}
+#cp-scores .sval.good{color:var(--ok)} #cp-scores .sval.mid{color:var(--text)} #cp-scores .sval.bad{color:var(--danger)}
+#cp-scores .sagg{margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
+#cp-scores .sagg b{font-family:var(--mono);color:var(--text)}
+#cp-scores .sclear{padding:2px 8px;font-size:11px}
 #cp-others{padding:8px 12px 12px;border-top:1px solid var(--border);background:var(--panel);max-height:180px;overflow-y:auto}
 #cp-others .ohead{font-size:12px;font-weight:700;margin-bottom:4px;display:flex;gap:6px;align-items:center}
 #cp-votebar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel);flex-wrap:wrap}
@@ -438,6 +447,7 @@ dialog h2{margin:0 0 10px;font-size:15px}
       </div>
       <div id="cp-armswrap" style="display:flex;flex-direction:column;min-height:0">
         <div id="cp-arms"></div>
+        <div id="cp-scores"></div>
         <div id="cp-votebar">
           <span class="note"><b id="cp-subjname">–</b> reflection:</span>
           <span class="vbtns">
@@ -518,7 +528,7 @@ const edMode = {prompt:"render", constitution:"render", guidelines:"render"};
 const LS = {key:"mrp_openrouter_key", pins:"mrp_pins_v1", draft:"mrp_draft_v1", sess:"mrp_session_key",
             review:"mrp_review_fb_v1", reviewer:"mrp_reviewer"};
 let currentPage = "playground";
-let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpPending = null;
+let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpPending = null, cpScores = {};
 const CPLS = {verdicts:"mrp_compare_review_v1", refs:"mrp_compare_refs_v1"};
 /* Declared with the rest of the state: `start()` runs before anything further
    down this file is initialised, so a const defined next to its function would
@@ -1412,12 +1422,54 @@ function initCompare(){
   $("cp-prev").addEventListener("click", () => cpSelect(cpIdx-1));
   $("cp-next").addEventListener("click", () => cpSelect(cpIdx+1));
   for (const id of ["cp-3p","cp-cols"]) $(id).addEventListener("change", cpRender);
+  cpBuildScores();
   $("cp-accept").addEventListener("click", () => cpSetPending("accept"));
   $("cp-reject").addEventListener("click", () => cpSetPending("reject"));
   $("cp-save").addEventListener("click", cpSubmit);
   $("cp-export").addEventListener("click", cpExport);
   $("cp-arms").addEventListener("click", cpChipClick);
   cpApplyFilter();
+}
+
+/* Built once, then only repainted: rebuilding these mid-drag would drop the
+   slider out from under the pointer. 0 means "not scored" — a range input
+   always has a value, so the scale starts below the rubric's 1. */
+function cpBuildScores(){
+  const box = $("cp-scores");
+  box.innerHTML = JDIMS.map(([k,label]) =>
+      `<span class="sgroup"><label for="s-${k}">${label}</label>`
+    + `<input type="range" id="s-${k}" data-dim="${k}" min="0" max="5" step="1" value="0">`
+    + `<span class="sval" id="v-${k}">–</span></span>`).join("")
+    + `<button class="sclear" id="cp-sclear" title="Clear your scores">clear</button>`
+    + `<span class="sagg" id="cp-sagg"></span>`;
+  box.querySelectorAll("input[type=range]").forEach(r =>
+    r.addEventListener("input", () => {
+      const v = Number(r.value);
+      if (v) cpScores[r.dataset.dim] = v; else delete cpScores[r.dataset.dim];
+      cpPaintScores();
+    }));
+  $("cp-sclear").addEventListener("click", () => { cpScores = {}; cpPaintScores(); });
+}
+
+function cpPaintScores(){
+  const band = v => v <= 2 ? "bad" : (v >= 4 ? "good" : "mid");
+  for (const [k] of JDIMS){
+    const v = cpScores[k] || 0;
+    $("s-"+k).value = v;
+    const el = $("v-"+k);
+    el.textContent = v || "–";
+    el.className = "sval" + (v ? " "+band(v) : "");
+  }
+  const vals = JDIMS.map(([k]) => cpScores[k]).filter(v => v != null);
+  const agg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+  // Same rule the judge applies, shown as information — it never sets the verdict.
+  const full = vals.length === JDIMS.length;
+  $("cp-sagg").innerHTML = agg == null
+    ? '<span class="note">optional — score the same four dimensions the judge used</span>'
+    : `mean <b>${agg.toFixed(2)}</b>`
+      + (full
+          ? ` · rule → <b>${vals.some(v => v <= 2) || agg < 4 ? "reject" : "accept"}</b>`
+          : ` <span class="note">(${vals.length}/${JDIMS.length} scored)</span>`);
 }
 
 function cpSetPending(v){
@@ -1495,6 +1547,8 @@ function cpLoadVote(){
   const saved = cpVotes()[cpVoteKey(it)];
   cpPending = null;
   cpSetPending(saved?.verdict || null);   // null toggles nothing, clears both
+  cpScores = {...(saved?.scores || {})};
+  cpPaintScores();
   $("cp-reason").value = saved?.reason || "";
   $("cp-votestate").textContent = saved ? "saved · " + new Date(saved.ts).toLocaleString() : "";
 }
@@ -1651,6 +1705,11 @@ function cpSubmit(){
     judge_decision: a.judge_decision || null,
     arm: cpSubject(), constitution: meta.constitution, safety_score: it.safety_score,
     verdict: cpPending, reason: $("cp-reason").value.trim(),
+    scores: {...cpScores},
+    aggregate: (() => {
+      const v = JDIMS.map(([k]) => cpScores[k]).filter(x => x != null);
+      return v.length ? v.reduce((a,b) => a+b, 0) / v.length : null;
+    })(),
     saw_reference_arms: cpShowRefs ? cpRefArms() : [],
     reviewer, ts: new Date().toISOString(),
   };
