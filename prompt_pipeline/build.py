@@ -177,6 +177,10 @@ def build_payload(embed_key: str | None = None) -> dict:
     review = json.loads(REVIEW_CARDS_PATH.read_text())
     review["feedback"] = json.loads(REVIEW_FEEDBACK_PATH.read_text())
     compare = json.loads(COMPARE_CARDS_PATH.read_text())
+    # Both pages read the same feedback file and match rows by run_id/item_id/
+    # generator, so verdicts exported from either land on the right page once
+    # they are merged back in.
+    compare["feedback"] = review["feedback"]
     payload = {
         "prompts": prompts,
         "constitutions": load(CONSTITUTIONS),

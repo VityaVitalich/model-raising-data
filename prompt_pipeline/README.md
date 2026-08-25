@@ -91,7 +91,18 @@ but not calibrated to the corpus these constitutions feed.
   card itself, next to the reflection under review rather than up in the toolbar.
   On by default, remembered per browser. The subject never hides, and reviewing
   works in either state: each verdict records which references were visible when
-  it was cast.
+  it was cast. Hiding is a CSS class flip, not a re-render — rebuilding the cards
+  would destroy the button between mousedown and mouseup and swallow the click.
+- **Filters**, the same set as the Reflection Review page: safety score, judge
+  verdict, and my-review state (all / unreviewed / reviewed). The judge filter is
+  disabled while the subject arm has no judge run — the matched arms are
+  currently unjudged, and a silently-empty filter would read as "no matches".
+- **Other reviews** per document, collapsed like the judge panel so your own vote
+  stays unanchored: verdicts by other reviewers, from the bundled feedback rows
+  plus any other reviewer names in this browser. Rows are matched on the subject
+  arm's `run_id`/`item_id`/`generator`, so verdicts from a different run never
+  leak in, and once exported rows are merged into `review_feedback.json` they
+  show up here automatically.
 - **Citations resolve per arm.** All three constitutions number their sections
   identically while meaning different things, so `compare_cards.json` carries a
   separate section map per arm and a chip opens the constitution *that arm was
@@ -169,7 +180,9 @@ Pages once in the repo settings (Settings → Pages → Deploy from branch →
 - `review_cards.json` — reflection-review cards, a `pipeline.charter.eval report`
   snapshot (committed for reproducible builds)
 - `review_feedback.json` — prior human verdicts (latest per card/reviewer,
-  merged from the HF feedback dataset), shown in the "Other reviews" panel
+  merged from the HF feedback dataset), shown in the "Other reviews" panel on
+  both the Reflection Review and Subject Review pages (each matches the rows
+  belonging to its own run)
 - `compare_cards.json` — merged ablation arms + the `subject` under review, built by
   `scripts/build_compare_cards.py` (rebuild it after generating a new arm)
 
