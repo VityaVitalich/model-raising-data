@@ -9,8 +9,9 @@ GitHub Pages — no backend.
   dataset examples.
 - **Reflection Review** — human review of `charter.eval` reflection runs
   (currently `normative_hierarchy_review_100_20260706_v2`).
-- **Constitution Compare** — the matched arms of the constitution ablation side
-  by side on the same documents.
+- **&lt;Subject&gt; Review** (nav label follows the payload's `subject`, currently
+  "Utilitarian Review") — human assessment of one constitution's annotations,
+  with the other matched arms alongside as reference.
 
 Built output: `docs/index.html` (single self-contained file).
 
@@ -62,34 +63,46 @@ the file contains more than one).
   names in this browser), behind the same collapsed toggle as the judge; your
   own rows are excluded.
 
-## Constitution Compare
+## Subject Review (currently "Utilitarian Review")
 
-Three arms annotated the **same 100 documents at the same reflection points**
-with the same model, decoding and seed — only the constitution, its guidelines
-and that setup's generator prompt differ
+**One arm is under assessment**; the others are reference material. The reviewer
+accepts or rejects the subject arm's reflection — this is not a preference test
+between constitutions, so nothing is blinded and every column names itself.
+
+Which arm is the subject comes from `compare_cards.json`'s `subject` field
+(`SUBJECT` in `scripts/build_compare_cards.py`); the page reads it for the nav
+label, the vote bar and the column order, so switching subjects is a rebuild,
+not an edit to the app.
+
+All arms annotated the **same 100 documents at the same reflection points** with
+the same model, decoding and seed — only the constitution, its guidelines and
+that setup's generator prompt differ
 (`pipeline.charter.eval matched-sample --arm ... --model qwen3.5-35b-a3b`).
+All run **qwen3.5-35b-a3b**, the model the 51M-document production run used;
+qwen3.6 systematically under-cites on identical inputs (29/100 items vs 46/100,
+50% vs 80% at safety 4), so a qwen3.6 comparison would be internally consistent
+but not calibrated to the corpus these constitutions feed.
 
-All arms run **qwen3.5-35b-a3b**, the model the 51M-document production run
-used. qwen3.6 systematically under-cites on identical inputs (29/100 items vs
-46/100, 50% vs 80% at safety 4), so a qwen3.6 comparison would be internally
-consistent but not calibrated to the corpus these constitutions feed.
-
-- The document is shown once with the ⟨reflect⟩ cut; each arm gets a column
-  with its `reflection_1p`, citation chips, and collapsed `analysis`,
-  `reflection_3p` and judge panels.
+- The document is shown once with the ⟨reflect⟩ cut; each arm gets a column with
+  its `reflection_1p`, citation chips, and collapsed `analysis`, `reflection_3p`
+  and judge panels. The subject is pinned first in the wider column and marked
+  `reviewing`; reference arms are dashed and muted.
+- **Reference arms toggle** (`reference arms (N)`, on by default, remembered per
+  browser) hides them entirely so the subject can be judged on its own. The
+  subject never hides, and reviewing works in either state — each verdict records
+  which references were visible when it was cast.
 - **Citations resolve per arm.** All three constitutions number their sections
   identically while meaning different things, so `compare_cards.json` carries a
   separate section map per arm and a chip opens the constitution *that arm was
   given*. A single shared map would silently show the wrong article.
-- Each column names its arm and the exact provenance it ran with —
-  constitution, guidelines and generator prompt filenames — so a reflection can
-  always be traced to the documents that produced it.
-- **Blind** is an opt-in toggle for preference testing: it hides the names and
-  provenance, leaving slots A/B/C. Column order is always shuffled per document
-  (stable across reloads) so no arm is permanently first.
-- Preferences are stored per reviewer in `localStorage` and export as JSONL
-  recording the winner, its run id, the slot shown, and the slot order — so a
-  blinded vote stays auditable.
+- Each column names the exact provenance it ran with — constitution, guidelines
+  and generator prompt filenames — so a reflection is always traceable.
+- Verdicts are stored per reviewer in `localStorage` and export as JSONL in the
+  **same row shape as the Reflection Review page** (`run_id`, `item_id`,
+  `generator`, `judge`, `judge_decision`, `verdict`, `reason`, `reviewer`, `ts`,
+  plus `arm`, `constitution`, `safety_score`, `saw_reference_arms`), so both
+  pages' output merges into the HF feedback dataset through the existing
+  `retrieve-feedback` flow.
 
 ## Security model
 
@@ -156,7 +169,7 @@ Pages once in the repo settings (Settings → Pages → Deploy from branch →
   snapshot (committed for reproducible builds)
 - `review_feedback.json` — prior human verdicts (latest per card/reviewer,
   merged from the HF feedback dataset), shown in the "Other reviews" panel
-- `compare_cards.json` — merged ablation arms for the Compare page, built by
+- `compare_cards.json` — merged ablation arms + the `subject` under review, built by
   `scripts/build_compare_cards.py` (rebuild it after generating a new arm)
 
 ## Why does the built site live in `docs/` and not here?

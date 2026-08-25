@@ -189,10 +189,16 @@ dialog h2{margin:0 0 10px;font-size:15px}
 #cp-doc .post{opacity:.35}
 #cp-arms{display:grid;gap:10px;padding:12px;overflow-y:auto;min-height:0;align-content:start}
 .armcard{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.armcard.win{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset}
+/* The subject arm is the one being assessed; references are context only. */
+.armcard.subject{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.armcard.subject.v-accept{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset}
+.armcard.subject.v-reject{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset}
+.armcard.ref{background:transparent;border-style:dashed}
+.armcard.ref .refl{color:var(--muted)}
 .armhead{display:flex;align-items:center;gap:8px;font-size:12px}
 .armhead .nm{font-weight:700}
-.armhead .slot{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px;font-weight:700;font-size:11px}
+.armhead .tag{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.armcard.ref .armhead .tag{background:transparent;color:var(--muted);border:1px solid var(--border);font-weight:600}
 .armhead .spacer{flex:1}
 .armmeta{display:flex;flex-direction:column;gap:1px;font-size:10.5px;color:var(--muted);font-family:var(--mono);
          border-left:2px solid var(--border);padding-left:7px;margin:-2px 0 2px}
@@ -203,9 +209,9 @@ dialog h2{margin:0 0 10px;font-size:15px}
 .armcard .chip:hover{border-color:var(--accent)}
 .armcard details{font-size:12px;color:var(--muted)}
 .armcard details .fval{color:var(--text);font-size:12.5px;line-height:1.5;white-space:pre-wrap;margin-top:4px}
-.pickbtn{align-self:flex-start;padding:3px 12px;font-size:11.5px}
-.pickbtn.on{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600}
 #cp-votebar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel);flex-wrap:wrap}
+#cp-votebar .vbtns{display:flex;gap:6px;flex:0 0 auto}
+#cp-votebar .vbtns button{flex:0 0 auto;padding:4px 12px;font-size:11.5px}
 #cp-votebar input[type=text]{flex:1;min-width:140px;height:28px}
 @media (max-width:1300px){ #cp-main{grid-template-columns:180px minmax(0,1fr) minmax(0,1.6fr)} }
 </style>
@@ -394,13 +400,13 @@ dialog h2{margin:0 0 10px;font-size:15px}
       </div>
       <span>id <b id="cp-id">–</b></span>
       <span>safety <span id="cp-score" class="badge">–</span></span>
-      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-blind"> blind</label>
+      <label style="display:flex;align-items:center;gap:4px" title="Show the other constitutions' annotations of the same document, for reference"><input type="checkbox" id="cp-refs" checked> <span id="cp-refslabel">reference arms</span></label>
       <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-3p"> show 3p</label>
       <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-cols" checked> columns</label>
       <span class="sep"></span>
       <span class="note" id="cp-progress"></span>
       <div class="hgroup"><label>reviewer</label><input id="cp-reviewer" placeholder="your name" style="width:110px;height:28px"></div>
-      <button id="cp-export" title="Download your preferences as JSONL">⬇ export</button>
+      <button id="cp-export" title="Download your verdicts as JSONL">⬇ export</button>
     </div>
     <div id="cp-main">
       <div id="cp-side">
@@ -408,15 +414,18 @@ dialog h2{margin:0 0 10px;font-size:15px}
         <div id="cp-list"></div>
       </div>
       <div id="cp-doccol">
-        <div class="note">Text the annotators saw is solid; everything after ⟨reflect⟩ was hidden from all three.</div>
+        <div class="note">Text the annotators saw is solid; everything after ⟨reflect⟩ was hidden from every arm.</div>
         <div id="cp-doc"></div>
       </div>
       <div id="cp-armswrap" style="display:flex;flex-direction:column;min-height:0">
         <div id="cp-arms"></div>
         <div id="cp-votebar">
-          <span class="note">Which reflection is best?</span>
-          <span id="cp-picked" class="note"></span>
-          <input type="text" id="cp-reason" placeholder="reason (optional)">
+          <span class="note"><b id="cp-subjname">–</b> reflection:</span>
+          <span class="vbtns">
+            <button class="accept" id="cp-accept">✓ accept</button>
+            <button class="reject" id="cp-reject">✗ reject</button>
+          </span>
+          <input type="text" id="cp-reason" placeholder="reason (optional, recommended on reject)">
           <button class="primary" id="cp-save">Save</button>
           <span class="note" id="cp-votestate"></span>
         </div>
@@ -490,9 +499,12 @@ const LS = {key:"mrp_openrouter_key", pins:"mrp_pins_v1", draft:"mrp_draft_v1", 
             review:"mrp_review_fb_v1", reviewer:"mrp_reviewer"};
 let currentPage = "playground";
 let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpPending = null;
-const CPLS = {votes:"mrp_compare_votes_v1"};
-const cpArmNames = () => CP.runs.map(r => r.label);
-const cpVotes = () => { try{ return JSON.parse(localStorage.getItem(CPLS.votes))||{}; }catch(e){ return {}; } };
+const CPLS = {verdicts:"mrp_compare_review_v1", refs:"mrp_compare_refs_v1"};
+const cpSubject = () => CP.subject;
+const cpRefArms = () => CP.runs.map(r => r.label).filter(l => l !== CP.subject);
+/* Arms to render: the subject always, references only while the toggle is on. */
+const cpArmNames = () => $("cp-refs").checked ? [cpSubject(), ...cpRefArms()] : [cpSubject()];
+const cpVotes = () => { try{ return JSON.parse(localStorage.getItem(CPLS.verdicts))||{}; }catch(e){ return {}; } };
 const cpReviewer = () => ($("cp-reviewer").value||"").trim();
 const cpVoteKey = it => it.item_id + "|" + cpReviewer();
 let RV = null, rvCards = [], rvIdx = 0, rvSafety = null, rvPending = null;
@@ -1333,25 +1345,22 @@ function rvJSONL(){
 }
 
 /* ============ compare page ============ */
-/* Stable per-item shuffle so a blinded slot keeps its arm across reloads,
-   while no arm sits in the same column for every document. */
-function cpOrder(item){
-  const arms = cpArmNames();
-  return arms
-    .map(a => ({a, k: seededRand(item.item_id + "::" + a)()}))
-    .sort((x,y) => x.k - y.k)
-    .map(x => x.a);
-}
+/* One arm (CP.subject) is under assessment; the others are reference material
+   the reviewer can hide. Order is fixed — subject first — because there is
+   nothing to blind: the reviewer is judging a named constitution's output. */
 
 function initCompare(){
   CP = P.compare;
+  $("cp-subjname").textContent = cpSubject();
+  document.querySelector('#topnav button[data-page="compare"]').textContent = cpSubject()+" Review";
+  $("cp-refslabel").textContent = "reference arms (" + cpRefArms().length + ")";
+  $("cp-refs").checked = localStorage.getItem(CPLS.refs) !== "0";
   $("cp-reviewer").value = localStorage.getItem(LS.reviewer)||"";
-  /* Reviewer changes must not rebuild the arm cards: the input blurs on
-     mousedown, so a rebuild here would destroy the button between mousedown
-     and mouseup and swallow the click that caused it. */
+  /* The verdict buttons live in the vote bar, not inside the cards, so a
+     rebuild here cannot destroy the control mid-click. */
   $("cp-reviewer").addEventListener("change", () => {
     localStorage.setItem(LS.reviewer, cpReviewer());
-    cpLoadVote(); cpPaintPicked(); cpRenderList(); cpProgress();
+    cpLoadVote(); cpRenderList(); cpProgress();
   });
   const scores = [...new Set(CP.items.map(i => i.safety_score))].sort();
   const mk = (label, val) => {
@@ -1364,11 +1373,28 @@ function initCompare(){
   for (const s of scores) mk("s"+s+" ("+CP.items.filter(i => i.safety_score===s).length+")", s);
   $("cp-prev").addEventListener("click", () => cpSelect(cpIdx-1));
   $("cp-next").addEventListener("click", () => cpSelect(cpIdx+1));
-  for (const id of ["cp-blind","cp-3p","cp-cols"]) $(id).addEventListener("change", cpRender);
+  for (const id of ["cp-3p","cp-cols"]) $(id).addEventListener("change", cpRender);
+  $("cp-refs").addEventListener("change", () => {
+    localStorage.setItem(CPLS.refs, $("cp-refs").checked ? "1" : "0");
+    cpRender();
+  });
+  $("cp-accept").addEventListener("click", () => cpSetPending("accept"));
+  $("cp-reject").addEventListener("click", () => cpSetPending("reject"));
   $("cp-save").addEventListener("click", cpSubmit);
   $("cp-export").addEventListener("click", cpExport);
   $("cp-arms").addEventListener("click", cpChipClick);
   cpApplyFilter();
+}
+
+function cpSetPending(v){
+  cpPending = cpPending === v ? null : v;
+  $("cp-accept").classList.toggle("on", cpPending==="accept");
+  $("cp-reject").classList.toggle("on", cpPending==="reject");
+  const card = document.querySelector("#cp-arms .armcard.subject");
+  if (card){
+    card.classList.toggle("v-accept", cpPending==="accept");
+    card.classList.toggle("v-reject", cpPending==="reject");
+  }
 }
 
 /* A citation means different things per arm: all three constitutions number
@@ -1402,7 +1428,8 @@ function cpRenderList(){
     r.innerHTML = `<span class="n">${i+1}</span><span class="badge s${it.safety_score}">${it.safety_score}</span>`
       + `<span class="snip"></span><span class="done"></span>`;
     r.querySelector(".snip").textContent = it.text.slice(0,80).replace(/\s+/g," ");
-    r.querySelector(".done").textContent = votes[cpVoteKey(it)] ? "✓" : "";
+    const v = votes[cpVoteKey(it)];
+    r.querySelector(".done").textContent = v ? (v.verdict==="reject" ? "✗" : "✓") : "";
     r.addEventListener("click", () => cpSelect(i));
     w.appendChild(r);
   });
@@ -1424,32 +1451,20 @@ function cpSelect(i){
 function cpLoadVote(){
   const it = cpItems[cpIdx]; if (!it) return;
   const saved = cpVotes()[cpVoteKey(it)];
-  cpPending = saved?.winner || null;
+  cpPending = null;
+  cpSetPending(saved?.verdict || null);   // null toggles nothing, clears both
   $("cp-reason").value = saved?.reason || "";
   $("cp-votestate").textContent = saved ? "saved · " + new Date(saved.ts).toLocaleString() : "";
 }
 
-/* Repaint the picked arm by toggling classes — never by re-rendering, so a
-   click that lands on a card is never destroyed mid-gesture. */
-function cpPaintPicked(){
-  const it = cpItems[cpIdx]; if (!it) return;
-  const order = cpOrder(it), blind = $("cp-blind").checked;
-  document.querySelectorAll("#cp-arms .armcard").forEach((card, slot) => {
-    const on = cpPending === order[slot];
-    card.classList.toggle("win", on);
-    const btn = card.querySelector(".pickbtn");
-    if (btn){ btn.classList.toggle("on", on); btn.textContent = on ? "✓ best" : "pick as best"; }
-  });
-  $("cp-picked").textContent = cpPending
-    ? (blind ? "picked slot " + String.fromCharCode(65+order.indexOf(cpPending)) : "picked " + cpPending)
-    : "";
-}
-
 function cpRender(){
   const it = cpItems[cpIdx]; if (!it) return;
-  const blind = $("cp-blind").checked, show3p = $("cp-3p").checked;
+  const show3p = $("cp-3p").checked;
+  const arms = cpArmNames();
+  // The subject gets the wider column; references are there to be glanced at.
   $("cp-arms").style.gridTemplateColumns = $("cp-cols").checked
-    ? `repeat(${CP.runs.length}, minmax(0,1fr))` : "minmax(0,1fr)";
+    ? ["minmax(0,1.4fr)", ...arms.slice(1).map(() => "minmax(0,1fr)")].join(" ")
+    : "minmax(0,1fr)";
 
   const doc = $("cp-doc"); doc.innerHTML = "";
   const pre = document.createElement("span"); pre.textContent = it.text.slice(0, it.reflection_point);
@@ -1457,17 +1472,18 @@ function cpRender(){
   const post = document.createElement("span"); post.className = "post"; post.textContent = it.text.slice(it.reflection_point);
   doc.append(pre, mark, post);
 
-  const order = cpOrder(it);
   const wrap = $("cp-arms"); wrap.innerHTML = "";
-  order.forEach((arm, slot) => {
+  arms.forEach(arm => {
     const a = it.arms[arm];
     const meta = CP.runs.find(r => r.label === arm);
+    const subject = arm === cpSubject();
     const card = document.createElement("div");
-    card.className = "armcard" + (cpPending === arm ? " win" : "");
-    let h = `<div class="armhead"><span class="slot">${String.fromCharCode(65+slot)}</span>`
-      + (blind ? "" : `<span class="nm">${rvEsc(arm)}</span>`)
+    card.className = "armcard " + (subject ? "subject" : "ref")
+      + (subject && cpPending ? " v-"+cpPending : "");
+    let h = `<div class="armhead"><span class="tag">${subject ? "reviewing" : "reference"}</span>`
+      + `<span class="nm">${rvEsc(arm)}</span>`
       + `<span class="spacer"></span></div>`;
-    if (!blind) h += `<div class="armmeta">`
+    h += `<div class="armmeta">`
       + `<span title="constitution">📜 ${rvEsc(meta.constitution)}</span>`
       + `<span title="annotation guidelines">📐 ${rvEsc(meta.guidelines)}</span>`
       + `<span title="generator prompt">⚙ ${rvEsc(meta.prompt)}</span></div>`;
@@ -1479,7 +1495,6 @@ function cpRender(){
       + `<div style="margin:4px 0"><span class="verdicttag ${rvEsc(a.judge_decision)}">${rvEsc(a.judge_decision)}</span>`
       + (a.judge_aggregate!=null ? ` <span class="note">agg ${rvEsc(a.judge_aggregate)}</span>` : "")
       + `</div><div class="fval a-jr"></div></details>`;
-    h += `<button class="pickbtn${cpPending===arm?" on":""}">${cpPending===arm?"✓ best":"pick as best"}</button>`;
     card.innerHTML = h;
 
     // citations resolve against THIS arm's constitution
@@ -1503,31 +1518,32 @@ function cpRender(){
     const an = card.querySelector(".a-an"); if (an) an.textContent = a.analysis;
     const t3 = card.querySelector(".a-3p"); if (t3) t3.textContent = a.reflection_3p;
     const jr = card.querySelector(".a-jr"); if (jr) jr.textContent = a.judge_reasoning||"";
-    card.querySelector(".pickbtn").addEventListener("click", () => {
-      cpPending = cpPending === arm ? null : arm;
-      cpPaintPicked();
-    });
     wrap.appendChild(card);
   });
-  cpPaintPicked();
 }
 
+/* Rows use the same shape as the Reflection Review page, so both exports drop
+   into the HF feedback dataset and merge through `retrieve-feedback`. */
 function cpSubmit(){
   const it = cpItems[cpIdx]; if (!it) return;
   const reviewer = cpReviewer();
   if (!reviewer){ $("cp-votestate").textContent = "enter your reviewer name first"; $("cp-reviewer").focus(); return; }
-  if (!cpPending){ $("cp-votestate").textContent = "pick a winner first"; return; }
+  if (!cpPending){ $("cp-votestate").textContent = "pick accept or reject first"; return; }
   localStorage.setItem(LS.reviewer, reviewer);
-  const order = cpOrder(it);
+  const meta = CP.runs.find(r => r.label === cpSubject());
+  const a = it.arms[cpSubject()];
   const votes = cpVotes();
   votes[cpVoteKey(it)] = {
-    item_id: it.item_id, safety_score: it.safety_score,
-    winner: cpPending, winner_run_id: CP.runs.find(r => r.label===cpPending)?.run_id,
-    slot: String.fromCharCode(65+order.indexOf(cpPending)),
-    slot_order: order, blind: $("cp-blind").checked,
-    reason: $("cp-reason").value.trim(), reviewer, ts: new Date().toISOString(),
+    run_id: meta.run_id, item_id: it.item_id,
+    generator: meta.gen_model+"__"+meta.prompt,
+    judge: a.judge_model ? a.judge_model+"__"+(a.judge_prompt||"") : null,
+    judge_decision: a.judge_decision || null,
+    arm: cpSubject(), constitution: meta.constitution, safety_score: it.safety_score,
+    verdict: cpPending, reason: $("cp-reason").value.trim(),
+    saw_reference_arms: $("cp-refs").checked ? cpRefArms() : [],
+    reviewer, ts: new Date().toISOString(),
   };
-  localStorage.setItem(CPLS.votes, JSON.stringify(votes));
+  localStorage.setItem(CPLS.verdicts, JSON.stringify(votes));
   cpRenderList(); cpProgress();
   const next = cpItems.findIndex((x,j) => j>cpIdx && !votes[cpVoteKey(x)]);
   cpSelect(next>=0 ? next : cpIdx);
@@ -1535,13 +1551,14 @@ function cpSubmit(){
 
 function cpProgress(){
   const reviewer = cpReviewer();
-  if (!reviewer){ $("cp-progress").textContent = CP.items.length+" documents · "+CP.runs.length+" arms — set your name to vote"; return; }
+  if (!reviewer){ $("cp-progress").textContent = CP.items.length+" documents · assessing "+cpSubject()+" — set your name to vote"; return; }
   const votes = cpVotes();
+  const mine = Object.values(votes).filter(v => v.reviewer===reviewer);
   const done = CP.items.filter(i => votes[i.item_id+"|"+reviewer]).length;
-  const tally = {};
-  for (const v of Object.values(votes)) if (v.reviewer===reviewer) tally[v.winner] = (tally[v.winner]||0)+1;
-  const summary = Object.entries(tally).map(([k,v]) => `${k}:${v}`).join("  ");
-  $("cp-progress").textContent = `${done}/${CP.items.length} judged by ${reviewer}` + (summary ? "  ·  "+summary : "");
+  const acc = mine.filter(v => v.verdict==="accept").length;
+  const rej = mine.filter(v => v.verdict==="reject").length;
+  $("cp-progress").textContent = `${done}/${CP.items.length} reviewed by ${reviewer}`
+    + (mine.length ? `  ·  ${acc} accept / ${rej} reject` : "");
 }
 
 function cpExport(){
@@ -1551,7 +1568,8 @@ function cpExport(){
   if (!rows.length){ $("cp-votestate").textContent = "nothing to export yet"; return; }
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([rows.map(r => JSON.stringify(r)).join("\n")+"\n"], {type:"application/jsonl"}));
-  a.download = "compare-"+(reviewer||"anon").replace(/[^\w.-]+/g,"_")+"-"+new Date().toISOString().slice(0,10)+".jsonl";
+  a.download = cpSubject().toLowerCase().replace(/[^\w.-]+/g,"_")+"-review-"
+    +(reviewer||"anon").replace(/[^\w.-]+/g,"_")+"-"+new Date().toISOString().slice(0,10)+".jsonl";
   a.click(); URL.revokeObjectURL(a.href);
 }
 

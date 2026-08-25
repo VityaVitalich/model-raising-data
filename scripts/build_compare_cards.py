@@ -1,4 +1,8 @@
-"""Merge matched charter.eval arms into one payload for the pairwise comparator.
+"""Merge matched charter.eval arms into one payload for the constitution review.
+
+One arm is the ``SUBJECT`` under assessment; the others ride along as reference,
+so a reviewer can see how the same document was annotated under a different
+constitution without that being what they are voting on.
 
 Every arm annotated the same documents at the same reflection points, so the
 document is stored once and each arm contributes only its own annotation.
@@ -49,6 +53,10 @@ ARMS: dict[str, tuple[str, str, str, str]] = {
     ),
 }
 
+# The arm being assessed. The others are shown for reference only, so the review
+# page pins this one first and never hides it.
+SUBJECT = "Utilitarian"
+
 ANNOTATION_FIELDS = (
     "analysis",
     "reflection_1p",
@@ -62,8 +70,9 @@ ANNOTATION_FIELDS = (
 )
 
 
-def build(arms: dict[str, tuple[str, str, str, str]]) -> dict:
-    """Merge the arms into ``{runs, sections, items}``, one entry per document."""
+def build(arms: dict[str, tuple[str, str, str, str]], subject: str = SUBJECT) -> dict:
+    """Merge the arms into ``{subject, runs, sections, items}``, one per document."""
+    assert subject in arms, f"subject {subject!r} is not one of the arms: {list(arms)}"
     loaded: dict[str, dict[str, dict]] = {}
     meta: dict[str, dict] = {}
     sections: dict[str, dict[str, str]] = {}
@@ -116,7 +125,14 @@ def build(arms: dict[str, tuple[str, str, str, str]]) -> dict:
                 },
             }
         )
-    return {"runs": [meta[lab] for lab in labels], "sections": sections, "items": items}
+    # Subject first: the page renders arms in payload order.
+    labels = [subject] + [lab for lab in labels if lab != subject]
+    return {
+        "subject": subject,
+        "runs": [meta[lab] for lab in labels],
+        "sections": sections,
+        "items": items,
+    }
 
 
 def main() -> int:
@@ -130,8 +146,9 @@ def main() -> int:
 
     print(f"\n{len(payload['items'])} items x {len(payload['runs'])} arms")
     for r in payload["runs"]:
+        role = "SUBJECT" if r["label"] == payload["subject"] else "ref"
         print(
-            f"  {r['label']:22} {r['constitution']:38} {r['n_sections']:>3} sections"
+            f"  {role:>7}  {r['label']:22} {r['constitution']:38} {r['n_sections']:>3} sections"
             f"  judged={r['judged']:>3}"
         )
     print(f"wrote {out} ({out.stat().st_size/1024:.0f} KB)")
