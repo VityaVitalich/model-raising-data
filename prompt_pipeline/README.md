@@ -92,9 +92,16 @@ others with adapted rubrics would put a second variable into a comparison whose
 whole point is that only the constitution changes.
 
 - The document is shown once with the ⟨reflect⟩ cut; each arm gets a column with
-  its `reflection_1p`, citation chips, and collapsed `analysis`, `reflection_3p`
-  and judge panels. The subject is pinned first in the wider column and marked
-  `reviewing`; reference arms are dashed and muted.
+  its `reflection_1p`, citation chips, and a collapsed `analysis` / `reflection_3p`.
+  The subject is pinned first in the wider column and marked `reviewing`;
+  reference arms are dashed and muted.
+- **Judge panel open by default**, one per arm: verdict and aggregate in the
+  header, then a score table (dimension, 1–5 value, 5-segment bar coloured by
+  band) and the reasoning. Each table names the rubric that produced it
+  (`kimi-k2.5 · judge_reflection_<arm>_1p_v1.md`), because the arms are scored by
+  different rubrics and a bare number would not say which.
+- **Other reviews** render under the vote bar, below the reason field — they are
+  about your verdict, not about the annotation.
 - **Reference arms toggle** — a `show/hide references (N)` button on the subject
   card itself, next to the reflection under review rather than up in the toolbar.
   On by default, remembered per browser. The subject never hides, and reviewing
@@ -105,12 +112,10 @@ whole point is that only the constitution changes.
   verdict, and my-review state (all / unreviewed / reviewed). The judge filter
   disables itself when the subject arm has no judge run, so a silently-empty
   filter never reads as "no matches".
-- **Other reviews** per document, collapsed like the judge panel so your own vote
-  stays unanchored: verdicts by other reviewers, from the bundled feedback rows
-  plus any other reviewer names in this browser. Rows are matched on the subject
-  arm's `run_id`/`item_id`/`generator`, so verdicts from a different run never
-  leak in, and once exported rows are merged into `review_feedback.json` they
-  show up here automatically.
+- Other reviews come from the bundled feedback rows plus any other reviewer names
+  in this browser, matched on the subject arm's `run_id`/`item_id`/`generator`, so
+  verdicts from a different run never leak in; once exported rows are merged into
+  `review_feedback.json` they show up here automatically.
 - **Citations resolve per arm.** All three constitutions number their sections
   identically while meaning different things, so `compare_cards.json` carries a
   separate section map per arm and a chip opens the constitution *that arm was

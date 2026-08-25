@@ -214,6 +214,19 @@ dialog h2{margin:0 0 10px;font-size:15px}
 .armcard .chip:hover{border-color:var(--accent)}
 .armcard details{font-size:12px;color:var(--muted)}
 .armcard details .fval{color:var(--text);font-size:12.5px;line-height:1.5;white-space:pre-wrap;margin-top:4px}
+.armcard details.judge>summary{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--text)}
+.armcard details.judge>summary .verdicttag{font-size:10px}
+.armcard details.judge>summary b{margin-left:auto;font-family:var(--mono);font-size:11.5px}
+.jtab{width:100%;border-collapse:collapse;margin:6px 0 4px;font-size:11.5px}
+.jtab th{text-align:left;font-weight:500;color:var(--muted);padding:2px 6px 2px 0;white-space:nowrap}
+.jtab td.sc{font-family:var(--mono);font-weight:700;width:1.6em;text-align:right;padding-right:6px}
+.jtab td.sc.good{color:var(--ok)} .jtab td.sc.mid{color:var(--muted)} .jtab td.sc.bad{color:var(--danger)}
+.jtab td.bar{width:100%;line-height:0}
+.jtab .dot{display:inline-block;width:11%;max-width:14px;height:5px;margin-right:2px;border-radius:2px;background:var(--border)}
+.jtab .dot.on.good{background:var(--ok)} .jtab .dot.on.mid{background:var(--muted)} .jtab .dot.on.bad{background:var(--danger)}
+.jrubric{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cp-others{padding:8px 12px 12px;border-top:1px solid var(--border);background:var(--panel);max-height:180px;overflow-y:auto}
+#cp-others .ohead{font-size:12px;font-weight:700;margin-bottom:4px;display:flex;gap:6px;align-items:center}
 #cp-votebar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel);flex-wrap:wrap}
 #cp-votebar .vbtns{display:flex;gap:6px;flex:0 0 auto}
 #cp-votebar .vbtns button{flex:0 0 auto;padding:4px 12px;font-size:11.5px}
@@ -435,6 +448,7 @@ dialog h2{margin:0 0 10px;font-size:15px}
           <button class="primary" id="cp-save">Save</button>
           <span class="note" id="cp-votestate"></span>
         </div>
+        <div id="cp-others"></div>
       </div>
     </div>
   </div><!-- /#page-compare -->
@@ -506,6 +520,15 @@ const LS = {key:"mrp_openrouter_key", pins:"mrp_pins_v1", draft:"mrp_draft_v1", 
 let currentPage = "playground";
 let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpPending = null;
 const CPLS = {verdicts:"mrp_compare_review_v1", refs:"mrp_compare_refs_v1"};
+/* Declared with the rest of the state: `start()` runs before anything further
+   down this file is initialised, so a const defined next to its function would
+   be in the temporal dead zone by the time the first render reads it. */
+const JDIMS = [
+  ["relevance", "relevance"],
+  ["specificity", "specificity"],
+  ["charter_grounding", "grounding"],
+  ["voice_tone", "voice & tone"],
+];
 let cpShowRefs = true;
 const cpSubject = () => CP.subject;
 const cpRefArms = () => CP.runs.map(r => r.label).filter(l => l !== CP.subject);
@@ -1369,6 +1392,7 @@ function initCompare(){
   $("cp-reviewer").addEventListener("change", () => {
     localStorage.setItem(LS.reviewer, cpReviewer());
     cpApplyFilter();   // "my review" and other-reviewer panels are per reviewer
+    cpRenderOthers();
   });
   [$("cp-verdict"), $("cp-state")].forEach(s => s.addEventListener("change", cpApplyFilter));
   /* The matched arms are unjudged (no judge_reflection prompt in this repo), so
@@ -1463,6 +1487,7 @@ function cpSelect(i){
   $("cp-score").textContent = it.safety_score; $("cp-score").className = "badge s"+it.safety_score;
   cpLoadVote();
   cpRender();
+  cpRenderOthers();
 }
 
 function cpLoadVote(){
@@ -1506,22 +1531,7 @@ function cpRender(){
     h += `<div class="cites"></div>`;
     if (a.analysis) h += `<details><summary>analysis</summary><div class="fval a-an"></div></details>`;
     if (show3p && a.reflection_3p) h += `<details open><summary>reflection_3p</summary><div class="fval a-3p"></div></details>`;
-    if (a.judge_decision) h += `<details><summary>judge (${rvEsc(a.judge_model||"")})</summary>`
-      + `<div style="margin:4px 0"><span class="verdicttag ${rvEsc(a.judge_decision)}">${rvEsc(a.judge_decision)}</span>`
-      + (a.judge_aggregate!=null ? ` <span class="note">agg ${rvEsc(a.judge_aggregate)}</span>` : "")
-      + `</div><div class="fval a-jr"></div></details>`;
-    // other reviewers' verdicts, collapsed so your own vote stays unanchored
-    if (subject){
-      const others = cpOthersFor(it);
-      h += `<details class="others"><summary>other reviews (${others.length})</summary>`;
-      h += others.length
-        ? others.map(r => `<div class="orow"><span class="verdicttag ${rvEsc(r.verdict)}">${rvEsc(r.verdict)}</span>`
-            + ` <b>${rvEsc(r.reviewer)}</b> <span class="note">${new Date(r.ts).toLocaleString()}</span>`
-            + (r.reason ? `<div class="fval" style="margin-top:2px">${rvEsc(r.reason)}</div>` : "")
-            + `</div>`).join("")
-        : `<span class="note">none for this document yet</span>`;
-      h += `</details>`;
-    }
+    if (a.judge_decision) h += cpJudgeHTML(a, meta);
     card.innerHTML = h;
 
     // citations resolve against THIS arm's constitution
@@ -1555,9 +1565,48 @@ function cpRender(){
   cpPaintRefs();
 }
 
+/* Each arm is scored by its own rubric, so the panel names the rubric next to
+   the scores — a number is meaningless without knowing what graded it. */
+function cpJudgeHTML(a, meta){
+  const sc = a.judge_scores || {};
+  const cls = v => v <= 2 ? "bad" : (v >= 4 ? "good" : "mid");
+  const rows = JDIMS.filter(([k]) => sc[k] != null).map(([k,label]) => {
+    const v = sc[k];
+    const dots = [1,2,3,4,5].map(i =>
+      `<span class="dot${i <= v ? " on "+cls(v) : ""}"></span>`).join("");
+    return `<tr><th>${label}</th><td class="sc ${cls(v)}">${rvEsc(v)}</td>`
+         + `<td class="bar">${dots}</td></tr>`;
+  }).join("");
+  return `<details class="judge" open><summary>judge`
+    + `<span class="verdicttag ${rvEsc(a.judge_decision)}">${rvEsc(a.judge_decision)}</span>`
+    + (a.judge_aggregate!=null ? `<b>${rvEsc(a.judge_aggregate)}</b>` : "")
+    + `</summary>`
+    + (rows ? `<table class="jtab">${rows}</table>` : "")
+    + `<div class="jrubric" title="${rvEsc(a.judge_model||meta.judge_model||"")} · ${rvEsc(meta.judge_prompt||"")}">`
+    + `${rvEsc(a.judge_model||meta.judge_model||"")} · ${rvEsc(meta.judge_prompt||"")}</div>`
+    + `<div class="fval a-jr"></div></details>`;
+}
+
 /* Verdicts on this document by anyone but you — bundled feedback rows plus other
    reviewer names in this browser. Matched on the subject arm's run, so review
    rows for a different run never leak in. Latest row per reviewer wins. */
+/* Rendered under the vote bar, not on the card: it is about your verdict, not
+   about the annotation. */
+function cpRenderOthers(){
+  const it = cpItems[cpIdx];
+  const box = $("cp-others");
+  if (!it){ box.innerHTML = ""; return; }
+  const others = cpOthersFor(it);
+  let h = `<div class="ohead">Other reviews <span class="note">${others.length}</span></div>`;
+  h += others.length
+    ? others.map(r => `<div class="orow"><span class="verdicttag ${rvEsc(r.verdict)}">${rvEsc(r.verdict)}</span>`
+        + ` <b>${rvEsc(r.reviewer)}</b> <span class="note">${new Date(r.ts).toLocaleString()}</span>`
+        + (r.reason ? `<div class="fval" style="margin-top:2px">${rvEsc(r.reason)}</div>` : "")
+        + `</div>`).join("")
+    : `<span class="note">none for this document yet</span>`;
+  box.innerHTML = h;
+}
+
 function cpOthersFor(item){
   const me = cpReviewer();
   const meta = CP.runs.find(r => r.label === cpSubject());
@@ -1606,7 +1655,7 @@ function cpSubmit(){
     reviewer, ts: new Date().toISOString(),
   };
   localStorage.setItem(CPLS.verdicts, JSON.stringify(votes));
-  cpRenderList(); cpProgress();
+  cpRenderList(); cpProgress(); cpRenderOthers();
   const next = cpItems.findIndex((x,j) => j>cpIdx && !votes[cpVoteKey(x)]);
   cpSelect(next>=0 ? next : cpIdx);
 }

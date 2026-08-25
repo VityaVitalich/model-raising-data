@@ -95,6 +95,10 @@ def build(arms: dict[str, tuple[str, str, str, str]], subject: str = SUBJECT) ->
             "gen_model": next(iter(cards.values()))["gen_model"],
             "n_sections": len(sections[label]),
             "judged": sum(1 for c in cards.values() if c.get("judge_decision")),
+            # Each arm is judged by its own rubric — name it, so a score is
+            # always traceable to the rubric that produced it.
+            "judge_model": next(iter(cards.values())).get("judge_model"),
+            "judge_prompt": next(iter(cards.values())).get("judge_prompt"),
         }
 
     shared = set.intersection(*[set(c) for c in loaded.values()])
