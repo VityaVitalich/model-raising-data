@@ -239,7 +239,13 @@ dialog h2{margin:0 0 10px;font-size:15px}
 #cp-votebar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel);flex-wrap:wrap}
 #cp-votebar .vbtns{display:flex;gap:6px;flex:0 0 auto}
 #cp-votebar .vbtns button{flex:0 0 auto;padding:4px 12px;font-size:11.5px}
-#cp-votebar input[type=text]{flex:1;min-width:140px;height:28px}
+#cp-votebar textarea{flex:1;min-width:240px;min-height:46px;max-height:120px;resize:vertical;
+                     font:inherit;font-size:12.5px;line-height:1.45;padding:6px 8px}
+.vbadge{font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em;
+        border-radius:6px;padding:3px 10px;border:1px solid var(--border);white-space:nowrap}
+.vbadge.accept{background:var(--ok);border-color:var(--ok);color:#fff}
+.vbadge.reject{background:var(--danger);border-color:var(--danger);color:#fff}
+.vbadge.none{color:var(--muted);text-transform:none;font-weight:500;letter-spacing:0}
 @media (max-width:1300px){ #cp-main{grid-template-columns:180px minmax(0,1fr) minmax(0,1.6fr)} }
 </style>
 </head>
@@ -450,11 +456,8 @@ dialog h2{margin:0 0 10px;font-size:15px}
         <div id="cp-scores"></div>
         <div id="cp-votebar">
           <span class="note"><b id="cp-subjname">–</b> reflection:</span>
-          <span class="vbtns">
-            <button class="accept" id="cp-accept">✓ accept</button>
-            <button class="reject" id="cp-reject">✗ reject</button>
-          </span>
-          <input type="text" id="cp-reason" placeholder="reason (optional, recommended on reject)">
+          <span id="cp-verdictbadge" class="vbadge none">not scored</span>
+          <textarea id="cp-reason" rows="2" placeholder="reason (optional, recommended on reject)"></textarea>
           <button class="primary" id="cp-save">Save</button>
           <span class="note" id="cp-votestate"></span>
         </div>
@@ -528,7 +531,7 @@ const edMode = {prompt:"render", constitution:"render", guidelines:"render"};
 const LS = {key:"mrp_openrouter_key", pins:"mrp_pins_v1", draft:"mrp_draft_v1", sess:"mrp_session_key",
             review:"mrp_review_fb_v1", reviewer:"mrp_reviewer"};
 let currentPage = "playground";
-let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpPending = null, cpScores = {};
+let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpScores = {};
 const CPLS = {verdicts:"mrp_compare_review_v1", refs:"mrp_compare_refs_v1"};
 /* Declared with the rest of the state: `start()` runs before anything further
    down this file is initialised, so a const defined next to its function would
@@ -1423,8 +1426,6 @@ function initCompare(){
   $("cp-next").addEventListener("click", () => cpSelect(cpIdx+1));
   for (const id of ["cp-3p","cp-cols"]) $(id).addEventListener("change", cpRender);
   cpBuildScores();
-  $("cp-accept").addEventListener("click", () => cpSetPending("accept"));
-  $("cp-reject").addEventListener("click", () => cpSetPending("reject"));
   $("cp-save").addEventListener("click", cpSubmit);
   $("cp-export").addEventListener("click", cpExport);
   $("cp-arms").addEventListener("click", cpChipClick);
@@ -1463,23 +1464,35 @@ function cpPaintScores(){
   const vals = JDIMS.map(([k]) => cpScores[k]).filter(v => v != null);
   const agg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
   // Same rule the judge applies, shown as information — it never sets the verdict.
-  const full = vals.length === JDIMS.length;
+  // The verdict badge states the outcome; this line only reports the arithmetic.
   $("cp-sagg").innerHTML = agg == null
-    ? '<span class="note">optional — score the same four dimensions the judge used</span>'
+    ? '<span class="note">score the same four dimensions the judge used</span>'
     : `mean <b>${agg.toFixed(2)}</b>`
-      + (full
-          ? ` · rule → <b>${vals.some(v => v <= 2) || agg < 4 ? "reject" : "accept"}</b>`
+      + (vals.length === JDIMS.length
+          ? ""
           : ` <span class="note">(${vals.length}/${JDIMS.length} scored)</span>`);
+  cpPaintVerdict();
 }
 
-function cpSetPending(v){
-  cpPending = cpPending === v ? null : v;
-  $("cp-accept").classList.toggle("on", cpPending==="accept");
-  $("cp-reject").classList.toggle("on", cpPending==="reject");
+/* The verdict follows the reviewer's own scores under the judge's rule, so a
+   human accept/reject can never contradict the numbers beside it. Null until
+   all four dimensions are scored — a partial score has no verdict. */
+function cpVerdict(){
+  const vals = JDIMS.map(([k]) => cpScores[k]);
+  if (vals.some(v => v == null)) return null;
+  const agg = vals.reduce((a,b) => a+b, 0) / vals.length;
+  return vals.some(v => v <= 2) || agg < 4 ? "reject" : "accept";
+}
+
+function cpPaintVerdict(){
+  const v = cpVerdict();
+  const badge = $("cp-verdictbadge");
+  badge.textContent = v || "not scored";
+  badge.className = "vbadge " + (v || "none");
   const card = document.querySelector("#cp-arms .armcard.subject");
   if (card){
-    card.classList.toggle("v-accept", cpPending==="accept");
-    card.classList.toggle("v-reject", cpPending==="reject");
+    card.classList.toggle("v-accept", v === "accept");
+    card.classList.toggle("v-reject", v === "reject");
   }
 }
 
@@ -1545,8 +1558,6 @@ function cpSelect(i){
 function cpLoadVote(){
   const it = cpItems[cpIdx]; if (!it) return;
   const saved = cpVotes()[cpVoteKey(it)];
-  cpPending = null;
-  cpSetPending(saved?.verdict || null);   // null toggles nothing, clears both
   cpScores = {...(saved?.scores || {})};
   cpPaintScores();
   $("cp-reason").value = saved?.reason || "";
@@ -1571,7 +1582,7 @@ function cpRender(){
     const subject = arm === cpSubject();
     const card = document.createElement("div");
     card.className = "armcard " + (subject ? "subject" : "ref")
-      + (subject && cpPending ? " v-"+cpPending : "");
+      + (subject && cpVerdict() ? " v-"+cpVerdict() : "");
     let h = `<div class="armhead"><span class="tag">${subject ? "reviewing" : "reference"}</span>`
       + `<span class="nm">${rvEsc(arm)}</span>`
       + `<span class="spacer"></span>`
@@ -1693,7 +1704,10 @@ function cpSubmit(){
   const it = cpItems[cpIdx]; if (!it) return;
   const reviewer = cpReviewer();
   if (!reviewer){ $("cp-votestate").textContent = "enter your reviewer name first"; $("cp-reviewer").focus(); return; }
-  if (!cpPending){ $("cp-votestate").textContent = "pick accept or reject first"; return; }
+  if (!cpVerdict()){
+    $("cp-votestate").textContent = "score all four dimensions first";
+    return;
+  }
   localStorage.setItem(LS.reviewer, reviewer);
   const meta = CP.runs.find(r => r.label === cpSubject());
   const a = it.arms[cpSubject()];
@@ -1704,7 +1718,7 @@ function cpSubmit(){
     judge: a.judge_model ? a.judge_model+"__"+(a.judge_prompt||"") : null,
     judge_decision: a.judge_decision || null,
     arm: cpSubject(), constitution: meta.constitution, safety_score: it.safety_score,
-    verdict: cpPending, reason: $("cp-reason").value.trim(),
+    verdict: cpVerdict(), reason: $("cp-reason").value.trim(),
     scores: {...cpScores},
     aggregate: (() => {
       const v = JDIMS.map(([k]) => cpScores[k]).filter(x => x != null);

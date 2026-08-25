@@ -100,13 +100,15 @@ whole point is that only the constitution changes.
   band) and the reasoning. Each table names the rubric that produced it
   (`kimi-k2.5 · judge_reflection_<arm>_1p_v1.md`), because the arms are scored by
   different rubrics and a bare number would not say which.
-- **Manual dimension scores.** Above the verdict row, a slider per rubric
-  dimension (1–5, 0 = not scored) lets the reviewer grade the same four things
-  the judge graded, so human and model scores are comparable dimension by
-  dimension. The live readout shows the mean and, once all four are set, what the
-  judge's own rule would decide — as information only; it never sets the verdict.
-  Scores are optional, ride along in the exported row as `scores` + `aggregate`,
-  and are built once so a drag is never interrupted by a re-render.
+- **The reviewer scores, the verdict follows.** A slider per rubric dimension
+  (1–5, 0 = not scored) grades the same four things the judge graded, and the
+  verdict is derived from them by the judge's own rule — mean ≥ 4, reject if any
+  dimension ≤ 2 — shown as a badge next to the reason box. There are no
+  accept/reject buttons: a clicked verdict could contradict the numbers beside
+  it, and human and model scores would not be comparable dimension by dimension.
+  All four must be set before a document can be saved. Scores and their mean ride
+  along in the exported row as `scores` + `aggregate`. The sliders are built once
+  so a drag is never interrupted by a re-render.
 - **Other reviews** render under the vote bar, below the reason field — they are
   about your verdict, not about the annotation.
 - **Reference arms toggle** — a `show/hide references (N)` button on the subject
