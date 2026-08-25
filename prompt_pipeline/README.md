@@ -110,7 +110,9 @@ whole point is that only the constitution changes.
   along in the exported row as `scores` + `aggregate`. The sliders are built once
   so a drag is never interrupted by a re-render.
 - **Other reviews** render under the vote bar, below the reason field — they are
-  about your verdict, not about the annotation.
+  about your verdict, not about the annotation. The whole review column is a
+  single scroll: cards, sliders, verdict and other reviews flow together, with no
+  nested scrollbox (a test asserts nothing inside it scrolls on its own).
 - **Reference arms toggle** — a `show/hide references (N)` button on the subject
   card itself, next to the reflection under review rather than up in the toolbar.
   On by default, remembered per browser. The subject never hides, and reviewing

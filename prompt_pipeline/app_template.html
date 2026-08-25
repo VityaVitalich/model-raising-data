@@ -188,7 +188,8 @@ dialog h2{margin:0 0 10px;font-size:15px}
 #cp-doccol{display:flex;flex-direction:column;min-width:0;min-height:0;padding:12px;gap:8px;border-right:1px solid var(--border)}
 #cp-doc{flex:1;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px;white-space:pre-wrap;font-size:12.5px;line-height:1.55}
 #cp-doc .post{opacity:.35}
-#cp-arms{display:grid;gap:10px;padding:12px;overflow-y:auto;min-height:0;align-content:start}
+#cp-armswrap{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+#cp-arms{display:grid;gap:10px;padding:12px;align-content:start}
 #cp-arms.norefs .armcard.ref{display:none}
 .armcard{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
 /* The subject arm is the one being assessed; references are context only. */
@@ -234,7 +235,7 @@ dialog h2{margin:0 0 10px;font-size:15px}
 #cp-scores .sagg{margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
 #cp-scores .sagg b{font-family:var(--mono);color:var(--text)}
 #cp-scores .sclear{padding:2px 8px;font-size:11px}
-#cp-others{padding:8px 12px 12px;border-top:1px solid var(--border);background:var(--panel);max-height:180px;overflow-y:auto}
+#cp-others{padding:8px 12px 12px;border-top:1px solid var(--border);background:var(--panel)}
 #cp-others .ohead{font-size:12px;font-weight:700;margin-bottom:4px;display:flex;gap:6px;align-items:center}
 #cp-votebar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel);flex-wrap:wrap}
 #cp-votebar .vbtns{display:flex;gap:6px;flex:0 0 auto}
@@ -451,7 +452,7 @@ dialog h2{margin:0 0 10px;font-size:15px}
         <div class="note">Text the annotators saw is solid; everything after ⟨reflect⟩ was hidden from every arm.</div>
         <div id="cp-doc"></div>
       </div>
-      <div id="cp-armswrap" style="display:flex;flex-direction:column;min-height:0">
+      <div id="cp-armswrap">
         <div id="cp-arms"></div>
         <div id="cp-scores"></div>
         <div id="cp-votebar">
