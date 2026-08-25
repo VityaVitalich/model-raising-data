@@ -200,6 +200,9 @@ dialog h2{margin:0 0 10px;font-size:15px}
 .armhead .tag{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
 .armcard.ref .armhead .tag{background:transparent;color:var(--muted);border:1px solid var(--border);font-weight:600}
 .armhead .spacer{flex:1}
+/* Reference toggle rides on the reflection under review, not in the toolbar. */
+.reftoggle{padding:2px 9px;font-size:11px;color:var(--muted);white-space:nowrap}
+.reftoggle:hover{color:var(--accent);border-color:var(--accent)}
 .armmeta{display:flex;flex-direction:column;gap:1px;font-size:10.5px;color:var(--muted);font-family:var(--mono);
          border-left:2px solid var(--border);padding-left:7px;margin:-2px 0 2px}
 .armmeta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -400,7 +403,6 @@ dialog h2{margin:0 0 10px;font-size:15px}
       </div>
       <span>id <b id="cp-id">–</b></span>
       <span>safety <span id="cp-score" class="badge">–</span></span>
-      <label style="display:flex;align-items:center;gap:4px" title="Show the other constitutions' annotations of the same document, for reference"><input type="checkbox" id="cp-refs" checked> <span id="cp-refslabel">reference arms</span></label>
       <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-3p"> show 3p</label>
       <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="cp-cols" checked> columns</label>
       <span class="sep"></span>
@@ -500,10 +502,11 @@ const LS = {key:"mrp_openrouter_key", pins:"mrp_pins_v1", draft:"mrp_draft_v1", 
 let currentPage = "playground";
 let CP = null, cpItems = [], cpIdx = 0, cpSafety = null, cpPending = null;
 const CPLS = {verdicts:"mrp_compare_review_v1", refs:"mrp_compare_refs_v1"};
+let cpShowRefs = true;
 const cpSubject = () => CP.subject;
 const cpRefArms = () => CP.runs.map(r => r.label).filter(l => l !== CP.subject);
 /* Arms to render: the subject always, references only while the toggle is on. */
-const cpArmNames = () => $("cp-refs").checked ? [cpSubject(), ...cpRefArms()] : [cpSubject()];
+const cpArmNames = () => cpShowRefs ? [cpSubject(), ...cpRefArms()] : [cpSubject()];
 const cpVotes = () => { try{ return JSON.parse(localStorage.getItem(CPLS.verdicts))||{}; }catch(e){ return {}; } };
 const cpReviewer = () => ($("cp-reviewer").value||"").trim();
 const cpVoteKey = it => it.item_id + "|" + cpReviewer();
@@ -1353,8 +1356,7 @@ function initCompare(){
   CP = P.compare;
   $("cp-subjname").textContent = cpSubject();
   document.querySelector('#topnav button[data-page="compare"]').textContent = cpSubject()+" Review";
-  $("cp-refslabel").textContent = "reference arms (" + cpRefArms().length + ")";
-  $("cp-refs").checked = localStorage.getItem(CPLS.refs) !== "0";
+  cpShowRefs = localStorage.getItem(CPLS.refs) !== "0";
   $("cp-reviewer").value = localStorage.getItem(LS.reviewer)||"";
   /* The verdict buttons live in the vote bar, not inside the cards, so a
      rebuild here cannot destroy the control mid-click. */
@@ -1374,10 +1376,6 @@ function initCompare(){
   $("cp-prev").addEventListener("click", () => cpSelect(cpIdx-1));
   $("cp-next").addEventListener("click", () => cpSelect(cpIdx+1));
   for (const id of ["cp-3p","cp-cols"]) $(id).addEventListener("change", cpRender);
-  $("cp-refs").addEventListener("change", () => {
-    localStorage.setItem(CPLS.refs, $("cp-refs").checked ? "1" : "0");
-    cpRender();
-  });
   $("cp-accept").addEventListener("click", () => cpSetPending("accept"));
   $("cp-reject").addEventListener("click", () => cpSetPending("reject"));
   $("cp-save").addEventListener("click", cpSubmit);
@@ -1482,7 +1480,9 @@ function cpRender(){
       + (subject && cpPending ? " v-"+cpPending : "");
     let h = `<div class="armhead"><span class="tag">${subject ? "reviewing" : "reference"}</span>`
       + `<span class="nm">${rvEsc(arm)}</span>`
-      + `<span class="spacer"></span></div>`;
+      + `<span class="spacer"></span>`
+      + (subject ? `<button class="reftoggle">${cpShowRefs ? "hide" : "show"} references (${cpRefArms().length})</button>` : "")
+      + `</div>`;
     h += `<div class="armmeta">`
       + `<span title="constitution">📜 ${rvEsc(meta.constitution)}</span>`
       + `<span title="annotation guidelines">📐 ${rvEsc(meta.guidelines)}</span>`
@@ -1518,6 +1518,11 @@ function cpRender(){
     const an = card.querySelector(".a-an"); if (an) an.textContent = a.analysis;
     const t3 = card.querySelector(".a-3p"); if (t3) t3.textContent = a.reflection_3p;
     const jr = card.querySelector(".a-jr"); if (jr) jr.textContent = a.judge_reasoning||"";
+    card.querySelector(".reftoggle")?.addEventListener("click", () => {
+      cpShowRefs = !cpShowRefs;
+      localStorage.setItem(CPLS.refs, cpShowRefs ? "1" : "0");
+      cpRender();
+    });
     wrap.appendChild(card);
   });
 }
@@ -1540,7 +1545,7 @@ function cpSubmit(){
     judge_decision: a.judge_decision || null,
     arm: cpSubject(), constitution: meta.constitution, safety_score: it.safety_score,
     verdict: cpPending, reason: $("cp-reason").value.trim(),
-    saw_reference_arms: $("cp-refs").checked ? cpRefArms() : [],
+    saw_reference_arms: cpShowRefs ? cpRefArms() : [],
     reviewer, ts: new Date().toISOString(),
   };
   localStorage.setItem(CPLS.verdicts, JSON.stringify(votes));

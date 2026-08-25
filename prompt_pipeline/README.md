@@ -87,10 +87,11 @@ but not calibrated to the corpus these constitutions feed.
   its `reflection_1p`, citation chips, and collapsed `analysis`, `reflection_3p`
   and judge panels. The subject is pinned first in the wider column and marked
   `reviewing`; reference arms are dashed and muted.
-- **Reference arms toggle** (`reference arms (N)`, on by default, remembered per
-  browser) hides them entirely so the subject can be judged on its own. The
-  subject never hides, and reviewing works in either state — each verdict records
-  which references were visible when it was cast.
+- **Reference arms toggle** — a `show/hide references (N)` button on the subject
+  card itself, next to the reflection under review rather than up in the toolbar.
+  On by default, remembered per browser. The subject never hides, and reviewing
+  works in either state: each verdict records which references were visible when
+  it was cast.
 - **Citations resolve per arm.** All three constitutions number their sections
   identically while meaning different things, so `compare_cards.json` carries a
   separate section map per arm and a chip opens the constitution *that arm was
