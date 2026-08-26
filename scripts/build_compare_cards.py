@@ -46,10 +46,12 @@ ARMS: dict[str, tuple[str, str, str, str]] = {
         "resources/NormativeHierarchyAnnotationGuidelines_v0.1.md",
     ),
     "Utilitarian": (
-        "data/pipeline/charter_eval/utilitarian_matched_100_q35/cards.json",
+        # _g3 = guidelines v0.3 (the adopted reflector), canary-free; the v0.1
+        # run stays on disk as utilitarian_matched_100_q35.
+        "data/pipeline/charter_eval/utilitarian_matched_100_q35_g3/cards.json",
         "resources/UtilitarianConstitution_v0.1.md",
         "generator_reflection_v7.md",
-        "resources/UtilitarianAnnotationGuidelines_v0.1.md",
+        "resources/UtilitarianAnnotationGuidelines_v0.3.md",
     ),
 }
 
