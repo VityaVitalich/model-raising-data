@@ -373,10 +373,15 @@ MATCHED_ARMS: dict[str, dict] = {
     },
     "utilitarian": {
         "charter": "resources/UtilitarianConstitution_v0.1.md",
-        "guidelines": "resources/UtilitarianAnnotationGuidelines_v0.1.md",
+        # v0.3 (2026-08-26): rules-of-thumb sweep, low-stakes citation, fiction/
+        # depicted-pain clauses — adopted after the _g3/_g4/_g5 ablations
+        # (v0.4 fragment-wise sums and v0.5 both retired: their deltas were
+        # within generation/judge sampling noise). Runs: q35=v0.1, _g3=v0.3,
+        # _g4=v0.4, _g5=v0.5.
+        "guidelines": "resources/UtilitarianAnnotationGuidelines_v0.3.md",
         "prompt": "generator_reflection_v7.md",
         "include_reflection_3p": True,
-        "judge_prompt": "judge_reflection_utilitarian_1p_v1.md",
+        "judge_prompt": "judge_reflection_utilitarian_1p_v2.2.md",
     },
     # Its own 1p-only prompt, as Julian's original normative review ran it —
     # the arm is the whole constitution+guidelines+prompt setup, not just the
@@ -442,6 +447,11 @@ def _configure_matched_eval(cfg, arm: str, model_alias: str = "qwen3.6-35b-a3b")
     # The rubrics score reflection_1p only; MR and utilitarian generated 3p too,
     # so the judge must not inherit the generator's voice list.
     cfg.charter.eval.generator_eval.judge_include_reflection_3p = False
+    # No canaries in matched-arm generations (decided 2026-08-26). The three
+    # existing q35 arms carry canaries on the same 10 docs; arms generated from
+    # here on won't, so regenerate all arms together if strict matchedness on
+    # those 10 items matters.
+    cfg.charter.eval.generator_eval.disable_canaries = True
 
 
 def _seed_matched_items(cfg, run_id: str, cards_path: str) -> int:

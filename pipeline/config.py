@@ -241,6 +241,7 @@ class GeneratorEvalConfig:
     safety_values: list[int] = field(default_factory=list)
     store_reasoning: bool = False
     failure_attempt_cap: int = 3
+    disable_canaries: bool = False  # True = inject no canaries (mirrors charter.scale.disable_canaries)
 
 
 @dataclass
