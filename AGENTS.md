@@ -72,6 +72,12 @@ uv run python -m pipeline.sft.multi_turn submit
 ```
 See `pipeline/charter/scale/README.md`, `pipeline/sft/single_turn/README.md`, and `pipeline/sft/multi_turn/README.md` for details.
 
+## Revising prompts, constitutions, guidelines, and other prose artifacts
+- Minimal changes when possible: touch only the lines the fix requires, keep everything else byte-identical to the previous version.
+- No slop: no redundant restatements, no rhetorical flourishes, no clause that doesn't change behavior.
+- Keep the original's writing style and vocabulary (e.g. the utilitarian docs speak in pleasure/pain terms — preserve that).
+- After every such revision, report a table of exactly what was changed and how: one row per touch, with the exact before-text and after-text.
+
 # Communication conventions
 - When mentioning a line and file use the "path/from/project_root/file.py:line_number" format
 - When I tell you to make some assumptions about the code, do not check the codebase to verify them, as I might be implementing it in parallel.
