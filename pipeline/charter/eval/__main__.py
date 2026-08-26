@@ -14,6 +14,7 @@ Usage:
     uv run python -m pipeline.charter.eval normative-judge <run_id> [--out PATH]
     uv run python -m pipeline.charter.eval matched-sample [--arm mr_v02|utilitarian|normative] [--run-id NAME] [--cards PATH] [--out PATH]
     uv run python -m pipeline.charter.eval matched-judge <run_id> [--arm mr_v02|utilitarian|normative] [--out PATH]
+    uv run python -m pipeline.charter.eval constitution-compare [--run-id BASE] [--n-items 100] [--source-items RUN_ID] [--stage generate|report] [--out PATH]
 
 OmegaConf-style dotlist overrides work the same as in charter.improve:
     uv run python -m pipeline.charter.eval eval-generators charter.eval.generator_eval.n_items=20
@@ -615,6 +616,70 @@ def cmd_matched_judge(args: list[str]) -> int:
     return 0
 
 
+def cmd_constitution_compare(args: list[str]) -> int:
+    run_id = None
+    n_items = 100
+    source_items = None
+    stage = None
+    out = None
+    i = 0
+    while i < len(args):
+        if args[i] == "--run-id" and i + 1 < len(args):
+            run_id = args[i + 1]
+            i += 2
+            continue
+        if args[i] == "--n-items" and i + 1 < len(args):
+            n_items = int(args[i + 1])
+            i += 2
+            continue
+        if args[i] == "--source-items" and i + 1 < len(args):
+            source_items = args[i + 1]
+            i += 2
+            continue
+        if args[i] == "--stage" and i + 1 < len(args):
+            stage = args[i + 1]
+            i += 2
+            continue
+        if args[i] == "--out" and i + 1 < len(args):
+            out = args[i + 1]
+            i += 2
+            continue
+        print(
+            "Usage: constitution-compare [--run-id BASE] [--n-items 100] "
+            "[--source-items RUN_ID] [--stage generate|report] [--out PATH]"
+        )
+        return 2
+    if stage not in (None, "generate", "report"):
+        print(f"Unknown --stage {stage!r}. Must be 'generate' or 'report'.")
+        return 2
+    if run_id is None:
+        run_id = f"constitution_compare_{_now_iso()}"
+
+    from pipeline.charter.eval.compare import (
+        DEFAULT_COMPARISON_PATH,
+        run_compare_generation,
+        write_comparison,
+    )
+
+    cfg = load_config()
+    cfg.max_tokens = 1920
+    if stage in (None, "generate"):
+        run_ids = run_compare_generation(
+            cfg,
+            run_id,
+            n_items=n_items,
+            seed=cfg.charter.eval.generator_eval.seed,
+            source_items_run=source_items,
+        )
+        print(f"Generated runs: {', '.join(run_ids)}")
+    if stage in (None, "report"):
+        out_path = out or DEFAULT_COMPARISON_PATH
+        n = write_comparison(run_id, out_path, eval_dir=cfg.charter.eval.eval_dir)
+        print(f"Wrote {n} comparison items -> {out_path}")
+    print(f"\nDone. base_run_id={run_id}")
+    return 0
+
+
 def cmd_list_runs(args: list[str]) -> int:
     cfg = load_config()
     root = _eval_root(cfg)
@@ -738,6 +803,7 @@ _DISPATCH = {
     "normative-judge": cmd_normative_judge,
     "matched-sample": cmd_matched_sample,
     "matched-judge": cmd_matched_judge,
+    "constitution-compare": cmd_constitution_compare,
     "list-runs": cmd_list_runs,
     "failures": cmd_failures,
 }
